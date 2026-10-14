@@ -44,13 +44,13 @@
   .navWorm { position:absolute; width:var(--size); height:var(--size); margin:calc(var(--size) / -2) 0 0 calc(var(--size) / -2); }
 
   /* ---------- Wurmloch (News) ---------- */
-  #wormBox, #wormBox2, .navWorm {
+  .navWorm {
     --img:url("wurmloch-news.png"); --sign-img:url("schild-news.png");
     --cx:50.3%; --cy:48.7%; --gx:49.8%; --gy:56.2%; --size:7vw;   /* Breite des Wurmlochs (wird per Skript gesetzt) */
     --sign:.7; --float:5%; --breathe:1.1; --pulse-t:2s; --sway:6deg; --sway-t:4.8s; --dive:10; --ratio:1.9365;
     --sw:calc(var(--size) * var(--sign));
   }
-  #worm, #worm2, .nwInner { transform-origin:50.3% 48.7%; }   /* Zoom-Mittelpunkt = Kern des Wurmlochs */
+  .nwInner { transform-origin:50.3% 48.7%; }   /* Zoom-Mittelpunkt = Kern des Wurmlochs */
   .portal { position:relative; display:block; width:var(--size); aspect-ratio:1; flex:none; cursor:pointer; border:0; padding:0; background:none;
     -webkit-tap-highlight-color:transparent; animation:float 6s ease-in-out infinite;
     transition:transform .35s ease, filter .35s ease, opacity .5s ease; }
@@ -102,8 +102,8 @@
   <div id="bg"></div>
   <div id="logoBox" class="abs"><img id="logo" class="logo" src="logo.png" alt="Logo"></div>
   <div id="logoBox2" class="abs"><img id="logo2" class="logo" src="logo2.png" alt="Logo 2"></div>
-  <div id="wormBox" class="abs"><div id="worm">
-    <button class="portal" id="portal" aria-label="News – Wurmloch betreten">
+  <template id="wormTpl"><div>
+    <button class="portal" aria-label="News – Wurmloch betreten">
       <span class="body"><span class="img"></span><span class="glow"></span></span>
       <i class="orbit" style="--r:9%;--t:9s;--dly:-1s;--s:2.2%"></i>
       <i class="orbit" style="--r:14%;--t:14s;--dly:-4s;--s:2.6%"></i>
@@ -113,7 +113,7 @@
       <i class="orbit" style="--r:16%;--t:16s;--dly:-9s;--s:1.8%"></i>
       <span class="signbox"><span class="sign" role="img" aria-label="News"></span></span>
     </button>
-  </div></div>
+  </div></template>
   <div id="symbole" class="abs"><div id="symGroup">
     <button class="sbtn" id="btnZurueck" type="button" aria-label="Zurück"><img id="symZurueck" src="Zurueck.png" alt=""></button>
     <span class="stopwrap">
@@ -161,7 +161,7 @@ const ANCHORS = {
       creditGap:-0.12, impressumDx:1.65,
       moveOut:-2.95, blurIn:2.21, blurOut:1.77, blurBgIn:2.21, blurBgOut:2.95,
       intro:{ text:{x:50, y:30}, logo2:{x:50, y:50} },
-      loop: { text:{x:50, y:10}, logo:{x:11.5, y:93.8}, logo2:{x:91.7, y:92.7}, syms:{x:50, y:94}, worm:{x:7.3, y:11.5} }
+      loop: { text:{x:50, y:10}, logo:{x:11.5, y:93.8}, logo2:{x:91.7, y:92.7}, syms:{x:50, y:94} }
     }},
     { ar:1536/695, v:{   // breites Querformat, 1536 x 695 px
       fontVw:3.91, moreVw:1.70, infoVw:1.35, infoW:52, navVw:1.70, navY:4, navR:30, logoVw:13.02, logo2Vw:9.77, introLogo2Vw:22.79, wormVw:7.00,
@@ -169,7 +169,7 @@ const ANCHORS = {
       creditGap:-0.14, impressumDx:0.95,
       moveOut:-2.88, blurIn:2.16, blurOut:1.73, blurBgIn:2.16, blurBgOut:2.88,
       intro:{ text:{x:50, y:30}, logo2:{x:50, y:50} },
-      loop: { text:{x:50, y:15}, logo:{x:8, y:93}, logo2:{x:94, y:92}, syms:{x:50, y:94}, worm:{x:5, y:12} }
+      loop: { text:{x:50, y:15}, logo:{x:8, y:93}, logo2:{x:94, y:92}, syms:{x:50, y:94} }
     }}
   ],
   port: [
@@ -179,7 +179,7 @@ const ANCHORS = {
       creditGap:-0.18, impressumDx:-3.95,
       moveOut:-2.72, blurIn:3.81, blurOut:3.05, blurBgIn:3.81, blurBgOut:5.08,
       intro:{ text:{x:50, y:29.9}, logo2:{x:50, y:40.2} },
-      loop: { text:{x:50, y:18.9}, logo:{x:16, y:96.4}, logo2:{x:87.3, y:95.6}, syms:{x:50, y:96.4}, worm:{x:10.9, y:7.1} }
+      loop: { text:{x:50, y:18.9}, logo:{x:16, y:96.4}, logo2:{x:87.3, y:95.6}, syms:{x:50, y:96.4} }
     }},
     { ar:810/948, v:{    // iPad hoch, 810 x 948 px
       fontVw:7.00, moreVw:3.00, infoVw:2.40, infoW:84, navVw:3.00, navY:4, navR:30, logoVw:25.00, logo2Vw:16.00, introLogo2Vw:40.00, wormVw:14.00,
@@ -187,7 +187,7 @@ const ANCHORS = {
       creditGap:0, impressumDx:-3.75,
       moveOut:-2.11, blurIn:1.85, blurOut:1.48, blurBgIn:1.85, blurBgOut:2.47,
       intro:{ text:{x:50, y:30}, logo2:{x:50, y:44.8} },
-      loop: { text:{x:50, y:22.9}, logo:{x:14.6, y:94.8}, logo2:{x:89.6, y:93.8}, syms:{x:50, y:94.8}, worm:{x:9.4, y:8.3} }
+      loop: { text:{x:50, y:22.9}, logo:{x:14.6, y:94.8}, logo2:{x:89.6, y:93.8}, syms:{x:50, y:94.8} }
     }}
   ]
 };
@@ -224,7 +224,7 @@ const NAV_IN = { blur:"in", scale:1.4, y:0, duration:1.25, ease:"power2.out", ea
 const CFG = {
   fontVw: 0,          // Textgröße in vw (kommt aus dem Profil)
   smallVw: 0,         // Schrift von Bildnachweis und Impressum in vw (kommt aus dem Profil)
-  wormVw: 0,          // Breite des Wurmlochs in vw (das Schild folgt automatisch)
+  wormVw: 0,          // Breite der Wurmlöcher im Navigations-Ring in vw (das Schild folgt automatisch)
   moreVw: 0, infoVw: 0, infoW: 0,   // Schrift "weitere Informationen", Schrift und Breite des Infotextes (aus dem Profil)
   moreText: "weitere Informationen",
   navVw: 0, navR: 0,   // Schrift "Navigation" in vw, Radius des Wurmloch-Rings in vmin (aus dem Profil)
@@ -265,7 +265,6 @@ const CFG = {
              in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) },
     impressum: true,   // Schriftzug unter logo2.png (blendet exakt wie logo2.png ein und aus)
     impressumDx: 0,    // waagerechter Versatz gegenüber der Mitte von logo2.png in vw (positiv = nach rechts)
-    worm:  { x:6, y:12, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) }
   }
 };
 
@@ -283,7 +282,6 @@ function applyProfile() {
   L.logo2.x = P.loop.logo2.x;    L.logo2.y = P.loop.logo2.y;   L.logo2.width = P.logo2Vw;
   L.syms.x = P.loop.syms.x;      L.syms.y = P.loop.syms.y;
   L.syms.gap = P.gap; L.syms.back = P.back; L.syms.stop = P.stop; L.syms.next = P.next;
-  L.worm.x = P.loop.worm.x;      L.worm.y = P.loop.worm.y;
   L.impressumDx = P.impressumDx;
 }
 applyProfile();
@@ -292,15 +290,7 @@ applyProfile();
    ABLAUF (muss normalerweise nicht verändert werden)
    ============================================================ */
 const $ = id => document.getElementById(id);
-const bg = $("bg"), titel = $("titel"), logo = $("logo"), logo2 = $("logo2"), worm = $("worm"), symGroup = $("symGroup"), impressum = $("impressum");
-
-/* Zweites Wurmloch: exakter Klon des ersten, gespiegelt in der rechten oberen Ecke */
-const wormBox2 = document.createElement("div");
-wormBox2.id = "wormBox2"; wormBox2.className = "abs";
-const worm2 = worm.cloneNode(true);
-worm2.id = "worm2"; worm2.querySelector(".portal").id = "portal2";
-wormBox2.append(worm2);
-$("wormBox").after(wormBox2);
+const bg = $("bg"), titel = $("titel"), logo = $("logo"), logo2 = $("logo2"), symGroup = $("symGroup"), impressum = $("impressum");
 const vars = p => ({
   opacity:0, filter:`blur(${REL.blur[p.blur] * Math.min(innerWidth, innerHeight) / 100}px)`, scale:p.scale,
   x:0, y:(p.y === "out" ? REL.moveOut : (p.y || 0)) * innerHeight / 100, rotation:0, rotationX:0,
@@ -398,7 +388,6 @@ function layout(cfg) {
   root.setProperty("--small", CFG.smallVw + "vw");
   root.setProperty("--more", CFG.moreVw); root.setProperty("--info", CFG.infoVw); root.setProperty("--infow", CFG.infoW);
   root.setProperty("--cgap", REL.creditGap);
-  $("wormBox").style.setProperty("--size", CFG.wormVw + "vw"); wormBox2.style.setProperty("--size", CFG.wormVw + "vw");
   $("textBox").style.left = cfg.textPos.x + "%"; $("textBox").style.top = cfg.textPos.y + "%";
   placeLogo(logo,  $("logoBox"),  cfg.logo);
   placeLogo(logo2, $("logoBox2"), cfg.logo2);
@@ -407,11 +396,6 @@ function layout(cfg) {
   placeImpressum(cfg);
   root.setProperty("--nav", CFG.navVw);
   placeNav(cfg); placeRing(); applyOverlay();
-  worm.style.display = worm2.style.display = cfg.worm ? "" : "none";
-  if (cfg.worm) {
-    $("wormBox").style.left = cfg.worm.x + "%"; $("wormBox").style.top = cfg.worm.y + "%";
-    wormBox2.style.left = (100 - cfg.worm.x) + "%"; wormBox2.style.top = cfg.worm.y + "%";   // gespiegelt zur linken Ecke
-  }
 }
 
 function buildTimeline(cfg, chars) {
@@ -422,23 +406,21 @@ function buildTimeline(cfg, chars) {
   if (cfg.nav)   tl.from($("navBtn"), vars(cfg.nav.in), cfg.nav.in.at);
   if (cfg.logo)  tl.from(logo,  vars(cfg.logo.in),  cfg.logo.in.at);
   if (cfg.logo2) tl.from(logo2, vars(cfg.logo2.in), cfg.logo2.in.at);
-  if (cfg.worm)  tl.from([worm, worm2], vars(cfg.worm.in), cfg.worm.in.at);
   if (cfg.syms)  tl.from(symGroup, vars(cfg.syms.in), cfg.syms.in.at);
   if (cfg.logo2 && cfg.impressum) tl.from(impressum, vars(cfg.logo2.in), cfg.logo2.in.at);
   tl.to({}, { duration:cfg.hold });
   tl.addLabel("out");
-  addOut(tl, cfg, chars, true);
+  addOut(tl, cfg, chars);
   return tl;
 }
 
 /* Ausblenden des aktuellen Bildschirms (Label "out" muss in tl existieren) */
-function addOut(tl, cfg, chars, withWorm) {
+function addOut(tl, cfg, chars) {
   tl.to(chars, vars(cfg.textOut), off(cfg.textOut.offset));
   if (cur.more.length) tl.to(cur.more, vars(cfg.textOut), off(cfg.textOut.offset));
   if (cur.info.length) tl.to(cur.info, vars(INFO_OUT), off(INFO_OUT.offset));   // falls der Infotext gerade aufgeklappt ist
   if (cfg.logo)  tl.to(logo,  vars(cfg.logo.out),  off(cfg.logo.out.offset));
   if (cfg.logo2) tl.to(logo2, vars(cfg.logo2.out), off(cfg.logo2.out.offset));
-  if (withWorm && cfg.worm) tl.to([worm, worm2], vars(cfg.worm.out), off(cfg.worm.out.offset));
   if (cfg.nav)  tl.to($("navBtn"), vars(cfg.nav.out), off(cfg.nav.out.offset));
   if (cfg.syms) tl.to(symGroup, vars(cfg.syms.out), off(cfg.syms.out.offset));
   if (cfg.logo2 && cfg.impressum) tl.to(impressum, vars(cfg.logo2.out), off(cfg.logo2.out.offset));
@@ -451,7 +433,7 @@ function playRun() {
   const intro = run === 0, cfg = intro ? CFG.intro : CFG.loop;
   const slide = intro ? cfg : cfg.slides[(run - 1) % cfg.slides.length];
   if (tl) tl.kill();
-  gsap.set([bg, logo, logo2, worm, worm2, symGroup, impressum, $("chev"), $("navBtn")], { clearProps:"opacity,filter,transform" });
+  gsap.set([bg, logo, logo2, symGroup, impressum, $("chev"), $("navBtn")], { clearProps:"opacity,filter,transform" });
   const chars = setText(slide.text);
   const extra = setMore(intro ? {} : slide);
   bg.style.backgroundImage = `url("${slide.bgSrc}")`;
@@ -479,42 +461,6 @@ function blackout() {
   bg.style.opacity = 0;
 }
 
-function onWormholeEnd() {
-  /* Blackscreen. Hier später den nächsten Bildschirm starten. */
-}
-
-function diveInto(w, box, portal) {
-  const other = w === worm ? worm2 : worm;   // das andere Wurmloch blendet wie der übrige Bildschirm aus
-  if (stopped || navigating || navOpen || run === 0 || !cur.cfg.worm) return;
-  if (gsap.getProperty(w, "opacity") < 0.3) return;   // nur klickbar, wenn sichtbar
-  stopped = true;
-  setPaused(false);   // zuerst, solange die Animationen noch leben ...
-  if (infoTween) infoTween.kill();
-  if (nextCall) nextCall.kill();
-  active.kill();      // ... und erst danach endgültig beenden
-  worm.querySelector(".portal").style.pointerEvents = "none"; worm2.querySelector(".portal").style.pointerEvents = "none";
-  box.style.zIndex = 5;
-  if (/blur\(0(px)?\)/.test(w.style.filter)) w.style.filter = "none";
-
-  // Kern des Wurmlochs auf dem Bildschirm (Kern liegt bei 50,3 % / 48,7 %)
-  const r = portal.getBoundingClientRect();
-  const dx = innerWidth  / 2 - (r.left + r.width  * 0.503);
-  const dy = innerHeight / 2 - (r.top  + r.height * 0.487);
-
-  // 1) aktueller Bildschirm blendet sofort aus
-  const ex = gsap.timeline();
-  ex.addLabel("out");
-  addOut(ex, cur.cfg, cur.chars, false);
-  ex.to(other, vars(cur.cfg.worm.out), off(cur.cfg.worm.out.offset));
-
-  // 2) gleichzeitig: Flug in den Kern des Wurmlochs
-  const z = gsap.timeline({ onComplete: () => { w.style.display = "none"; blackout(); onWormholeEnd(); } });
-  z.to(w, { x: gsap.getProperty(w, "x") + dx, y: gsap.getProperty(w, "y") + dy, scale: ZOOM_SCALE, duration: ZOOM_TIME, ease: ZOOM_EASE }, 0)
-   .to(w, { opacity: 0, duration: 0.5, ease: "power1.in" }, ZOOM_TIME - 0.5);
-}
-$("portal").addEventListener("click",  () => diveInto(worm,  $("wormBox"), $("portal")));
-$("portal2").addEventListener("click", () => diveInto(worm2, wormBox2,     $("portal2")));
-
 /* ---------- Steuerung: Zurück / Stopp / Vor ---------- */
 function setPaused(p) {
   paused = p;
@@ -539,7 +485,7 @@ function navigate(delta) {
   const ex = gsap.timeline({ onComplete: () => { navigating = false; run = next + 1; playRun(); } });
   active = ex;
   ex.addLabel("out");
-  addOut(ex, cur.cfg, cur.chars, true);
+  addOut(ex, cur.cfg, cur.chars);
 }
 function moreReady() {   // nur solange die Seite eingeblendet ist und noch nicht ausblendet
   return !stopped && !navigating && !navOpen && run !== 0 && cur && cur.more.length && active === tl && tl.time() < tl.labels.out
@@ -611,7 +557,7 @@ function diveFromNav(i, w, portal) {
   const others = [...ring.querySelectorAll(".nwInner")].filter(e => e !== w);
   const ex = gsap.timeline();
   ex.addLabel("out");
-  addOut(ex, cur.cfg, cur.chars, true);
+  addOut(ex, cur.cfg, cur.chars);
   ex.to(others, vars(LOGO_OUT(0)), off(0));
 
   // 2) gleichzeitig: Flug in den Kern des Wurmlochs
@@ -630,7 +576,7 @@ function diveFromNav(i, w, portal) {
   const ring = $("navRing");
   for (let i = 0; i < NAV_COUNT; i++) {
     const item = document.createElement("div"); item.className = "navWorm";
-    const copy = $("worm").cloneNode(true);
+    const copy = $("wormTpl").content.firstElementChild.cloneNode(true);
     copy.removeAttribute("id"); copy.classList.add("nwInner");
     copy.querySelectorAll("[id]").forEach(e => e.removeAttribute("id"));
     const portal = copy.querySelector(".portal");
