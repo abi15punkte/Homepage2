@@ -21,6 +21,19 @@
   #titel { margin:0; line-height:1.2; }
   .logo { display:block; height:auto; max-width:none; flex:none; }
 
+  /* ---------- "weitere Informationen" + aufklappbarer Text (nur Karussell) ---------- */
+  #moreWrap { position:absolute; left:50%; top:100%; transform:translateX(-50%); width:max-content; display:flex; flex-direction:column; align-items:center;
+    font-size:calc(var(--more, 2) * 1vw); pointer-events:none; }
+  .more { pointer-events:auto; display:inline-flex; align-items:center; gap:.35em; border:0; background:none; padding:.3em .6em; cursor:pointer; white-space:nowrap;
+    color:#fff; font:500 1em/1.2 system-ui, sans-serif; text-shadow:0 .06em .3em rgba(0,0,0,.85); -webkit-tap-highlight-color:transparent; }
+  .more .chev { display:inline-flex; transition:transform .35s ease; }
+  .more svg { display:block; width:1em; height:1em; overflow:visible; }
+  .more:hover:not([aria-expanded="true"]) .chev { transform:translateY(.15em); }
+  .more[aria-expanded="true"] .chev { transform:rotate(180deg); }
+  .more:focus-visible { outline:2px solid #8fa4ff; outline-offset:2px; border-radius:6px; }
+  #infoText { margin:.5em 0 0; width:calc(var(--infow, 60) * 1vw); max-width:94vw; text-align:center; color:#fff; font:400 calc(var(--info, 1.6) * 1vw)/1.45 system-ui, sans-serif;
+    text-shadow:0 .06em .35em rgba(0,0,0,.9); pointer-events:none; white-space:normal; }
+
   /* ---------- Wurmloch (News) ---------- */
   #wormBox {
     --img:url("wurmloch-news.png"); --sign-img:url("schild-news.png");
@@ -101,7 +114,12 @@
     <button class="sbtn" id="btnVor"     type="button" aria-label="Vor"><img id="symVor" src="Vor.png" alt=""></button>
   </div></div>
   <div id="impBox" class="abs"><a id="impressum" class="impressum" href="#">Impressum</a></div>
-  <div id="textBox" class="abs"><h1 id="titel"></h1></div>
+  <div id="textBox" class="abs"><h1 id="titel"></h1>
+    <div id="moreWrap">
+      <button class="more" id="moreBtn" type="button" aria-expanded="false" aria-controls="infoText"><span id="moreText"></span><span class="chev"><svg id="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg></span></button>
+      <div id="infoText" aria-hidden="true"></div>
+    </div>
+  </div>
 </div>
 <div id="fehlt"></div>
 
@@ -124,7 +142,7 @@ gsap.registerPlugin(SplitText);
 const ANCHORS = {
   land: [   // aufsteigend nach Seitenverhältnis
     { ar:1080/678, v:{   // iPad quer, 1080 x 678 px
-      fontVw:4.75, logoVw:18.52, logo2Vw:11.90, introLogo2Vw:32.41, wormVw:9.90,
+      fontVw:4.75, moreVw:2.00, infoVw:1.70, infoW:62, logoVw:18.52, logo2Vw:11.90, introLogo2Vw:32.41, wormVw:9.90,
       back:2.78, stop:3.70, next:2.78, gap:0.93, smallVw:1.11,
       creditGap:-0.12, impressumDx:1.65,
       moveOut:-2.95, blurIn:2.21, blurOut:1.77, blurBgIn:2.21, blurBgOut:2.95,
@@ -132,7 +150,7 @@ const ANCHORS = {
       loop: { text:{x:50, y:10}, logo:{x:11.5, y:93.8}, logo2:{x:91.7, y:92.7}, syms:{x:50, y:94}, worm:{x:7.3, y:11.5} }
     }},
     { ar:1536/695, v:{   // breites Querformat, 1536 x 695 px
-      fontVw:3.91, logoVw:13.02, logo2Vw:9.77, introLogo2Vw:22.79, wormVw:7.00,
+      fontVw:3.91, moreVw:1.70, infoVw:1.35, infoW:52, logoVw:13.02, logo2Vw:9.77, introLogo2Vw:22.79, wormVw:7.00,
       back:1.95, stop:2.60, next:1.95, gap:0.65, smallVw:0.78,
       creditGap:-0.14, impressumDx:0.95,
       moveOut:-2.88, blurIn:2.16, blurOut:1.73, blurBgIn:2.16, blurBgOut:2.88,
@@ -142,7 +160,7 @@ const ANCHORS = {
   ],
   port: [
     { ar:394/734, v:{    // schmales Hochformat, 394 x 734 px
-      fontVw:8.10, logoVw:30.00, logo2Vw:19.90, introLogo2Vw:40.00, wormVw:20.00,
+      fontVw:8.10, moreVw:4.20, infoVw:3.80, infoW:88, logoVw:30.00, logo2Vw:19.90, introLogo2Vw:40.00, wormVw:20.00,
       back:5.00, stop:7.00, next:5.00, gap:2.00, smallVw:2.20,
       creditGap:-0.18, impressumDx:-3.95,
       moveOut:-2.72, blurIn:3.81, blurOut:3.05, blurBgIn:3.81, blurBgOut:5.08,
@@ -150,7 +168,7 @@ const ANCHORS = {
       loop: { text:{x:50, y:18.9}, logo:{x:16, y:96.4}, logo2:{x:87.3, y:95.6}, syms:{x:50, y:96.4}, worm:{x:10.9, y:7.1} }
     }},
     { ar:810/948, v:{    // iPad hoch, 810 x 948 px
-      fontVw:7.00, logoVw:25.00, logo2Vw:16.00, introLogo2Vw:40.00, wormVw:14.00,
+      fontVw:7.00, moreVw:3.00, infoVw:2.40, infoW:84, logoVw:25.00, logo2Vw:16.00, introLogo2Vw:40.00, wormVw:14.00,
       back:3.70, stop:4.94, next:3.70, gap:1.23, smallVw:1.48,
       creditGap:0, impressumDx:-3.75,
       moveOut:-2.11, blurIn:1.85, blurOut:1.48, blurBgIn:1.85, blurBgOut:2.47,
@@ -181,10 +199,16 @@ const BG_OUT = { blur:"bgOut", scale:1, y:0,     duration:1,   ease:"power2.in",
 const TXT_OUT = { blur:"out",  scale:1, y:"out", duration:0.5, ease:"power2.in", each:0.03, from:"end", offset:0 };
 const LOGO_OUT = offset => ({ blur:"out", scale:1, y:"out", duration:0.5, ease:"power2.in", offset });
 
+/* Infotext: gleicher Effekt wie der übrige Text, Gesamtdauer des Staffelns über "amount" begrenzt */
+const INFO_IN  = { blur:"in",  scale:1.4, y:0,     duration:1,   ease:"power2.out", amount:1.4, from:"start" };
+const INFO_OUT = { blur:"out", scale:1,   y:"out", duration:0.5, ease:"power2.in",  amount:0.5, from:"end", offset:0 };
+
 const CFG = {
   fontVw: 0,          // Textgröße in vw (kommt aus dem Profil)
   smallVw: 0,         // Schrift von Bildnachweis und Impressum in vw (kommt aus dem Profil)
   wormVw: 0,          // Breite des Wurmlochs in vw (das Schild folgt automatisch)
+  moreVw: 0, infoVw: 0, infoW: 0,   // Schrift "weitere Informationen", Schrift und Breite des Infotextes (aus dem Profil)
+  moreText: "weitere Informationen",
   color: "#ffffff", weight: 500, font: "system-ui, sans-serif",
   dim: 0.3,            // Abdunkeln des Hintergrunds (0 bis 0.9)
 
@@ -203,14 +227,18 @@ const CFG = {
   loop: {
     slides: [
       // credit: Name des Kindes, das das Foto aufgenommen hat, und Klasse (Platzhalter bitte ersetzen)
-      { bgSrc:"002.jpg", text:"Unser Sportplatz",   credit:{ name:"Max Mustermann", klasse:"M14" } },
-      { bgSrc:"003.jpg", text:"Text für 003.jpg",   credit:{ name:"Erika Beispiel", klasse:"ehemals M7" } },
-      { bgSrc:"004.jpg", text:"Text für 004.jpg",   credit:{ name:"Name Nachname",  klasse:"M14" } }
+      { bgSrc:"002.jpg", text:"Unser Sportplatz",   credit:{ name:"Max Mustermann", klasse:"M14" },
+        info:"Der Sportplatz wurde im vergangenen Sommer neu angelegt. Er bietet Platz für Fußball, Leichtathletik und unser Sportfest am Ende des Schuljahres. In den großen Pausen steht er allen Klassen offen." },
+      { bgSrc:"003.jpg", text:"Text für 003.jpg",   credit:{ name:"Erika Beispiel", klasse:"ehemals M7" },
+        info:"Dies ist ein ausgedachter Beispieltext für das dritte Bild. Hier stehen später ein paar Sätze mit weiteren Informationen, zum Beispiel wann das Foto entstanden ist, wer darauf zu sehen ist und welche Aktion dahintersteckt." },
+      { bgSrc:"004.jpg", text:"Text für 004.jpg",   credit:{ name:"Name Nachname",  klasse:"M14" },
+        info:"Auch dieser Text ist nur ein Platzhalter. Er zeigt, wie mehrere Zeilen Fließtext eingeblendet werden, wenn man auf „weitere Informationen“ klickt. Das Karussell bleibt dabei so lange angehalten, bis du auf Play drückst." }
     ],
     hold: 2.5, pauseAfter: 0.5,
     bg:    { in:{ at:0, blur:"bgIn", scale:1.4, duration:2.5, ease:"power2.out" }, out:BG_OUT },
     textPos:{ x:50, y:10 },
     textIn:{ at:0.5, blur:"in", scale:1.4, duration:1, ease:"power2.out", each:0.1, from:"start" }, textOut:TXT_OUT,
+    moreIn:{ at:1.2, blur:"in", scale:1.4, duration:1, ease:"power2.out", each:0.04, from:"start" },   // zweite Zeile: gleicher Effekt, etwas schnellerer Takt
     logo:  { x:8,  y:93, width:0, plate:false, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) },
     logo2: { x:94, y:92, width:0, plate:false, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.15) },
     syms:  { x:50, y:94, gap:0, back:0, stop:0, next:0,   // Breiten in vw
@@ -224,7 +252,7 @@ const CFG = {
 /* Überträgt das passende Profil (Quer- oder Hochformat) in CFG und REL */
 function applyProfile() {
   const P = profileValues();
-  CFG.fontVw = P.fontVw; CFG.smallVw = P.smallVw; CFG.wormVw = P.wormVw;
+  CFG.moreVw = P.moreVw; CFG.infoVw = P.infoVw; CFG.infoW = P.infoW; CFG.fontVw = P.fontVw; CFG.smallVw = P.smallVw; CFG.wormVw = P.wormVw;
   REL.creditGap = P.creditGap; REL.moveOut = P.moveOut;
   REL.blur.in = P.blurIn; REL.blur.out = P.blurOut; REL.blur.bgIn = P.blurBgIn; REL.blur.bgOut = P.blurBgOut;
   const I = CFG.intro, L = CFG.loop;
@@ -249,7 +277,8 @@ const vars = p => ({
   opacity:0, filter:`blur(${REL.blur[p.blur] * Math.min(innerWidth, innerHeight) / 100}px)`, scale:p.scale,
   x:0, y:(p.y === "out" ? REL.moveOut : (p.y || 0)) * innerHeight / 100, rotation:0, rotationX:0,
   transformPerspective:600, duration:p.duration, ease:p.ease,
-  ...(p.each != null ? { stagger:{ each:p.each, from:p.from } } : {})
+  ...(p.each != null ? { stagger:{ each:p.each, from:p.from } } : {}),
+  ...(p.amount != null ? { stagger:{ amount:p.amount, from:p.from } } : {})
 });
 const off = o => "out" + (o < 0 ? "-=" : "+=") + Math.abs(o);
 
@@ -261,6 +290,24 @@ function setText(t) {
   titel.textContent = t;
   split = new SplitText(titel, { type:"chars" });
   return split.chars;
+}
+
+/* Zweite Zeile "weitere Informationen" mit Symbol und der aufklappbare Infotext */
+let splitMore, splitInfo, infoTween = null;
+function setMore(slide) {
+  if (infoTween) { infoTween.kill(); infoTween = null; }
+  if (splitMore) { splitMore.revert(); splitMore = null; }
+  if (splitInfo) { splitInfo.revert(); splitInfo = null; }
+  const btn = $("moreBtn"), wrap = $("moreWrap");
+  btn.setAttribute("aria-expanded", "false"); $("infoText").setAttribute("aria-hidden", "true");
+  if (!slide.info) { wrap.style.display = "none"; return { more:[], info:[] }; }
+  wrap.style.display = "";
+  $("moreText").textContent = CFG.moreText;
+  $("infoText").textContent = slide.info;
+  splitMore = new SplitText($("moreText"), { type:"words,chars" });
+  splitInfo = new SplitText($("infoText"), { type:"words,chars" });
+  gsap.set(splitInfo.chars, { opacity:0 });
+  return { more:[...splitMore.chars, $("chev")], info:splitInfo.chars };
 }
 
 function placeLogo(img, box, c) {
@@ -296,6 +343,7 @@ function layout(cfg) {
   const root = document.documentElement.style;
   titel.style.fontSize = CFG.fontVw + "vw";
   root.setProperty("--small", CFG.smallVw + "vw");
+  root.setProperty("--more", CFG.moreVw); root.setProperty("--info", CFG.infoVw); root.setProperty("--infow", CFG.infoW);
   root.setProperty("--cgap", REL.creditGap);
   $("wormBox").style.setProperty("--size", CFG.wormVw + "vw");
   $("textBox").style.left = cfg.textPos.x + "%"; $("textBox").style.top = cfg.textPos.y + "%";
@@ -312,6 +360,7 @@ function buildTimeline(cfg, chars) {
   const tl = gsap.timeline();
   tl.from(bg, vars(cfg.bg.in), cfg.bg.in.at);
   tl.from(chars, vars(cfg.textIn), cfg.textIn.at);
+  if (cur.more.length) tl.from(cur.more, vars(cfg.moreIn), cfg.moreIn.at);
   if (cfg.logo)  tl.from(logo,  vars(cfg.logo.in),  cfg.logo.in.at);
   if (cfg.logo2) tl.from(logo2, vars(cfg.logo2.in), cfg.logo2.in.at);
   if (cfg.worm)  tl.from(worm,  vars(cfg.worm.in),  cfg.worm.in.at);
@@ -326,6 +375,8 @@ function buildTimeline(cfg, chars) {
 /* Ausblenden des aktuellen Bildschirms (Label "out" muss in tl existieren) */
 function addOut(tl, cfg, chars, withWorm) {
   tl.to(chars, vars(cfg.textOut), off(cfg.textOut.offset));
+  if (cur.more.length) tl.to(cur.more, vars(cfg.textOut), off(cfg.textOut.offset));
+  if (cur.info.length) tl.to(cur.info, vars(INFO_OUT), off(INFO_OUT.offset));   // falls der Infotext gerade aufgeklappt ist
   if (cfg.logo)  tl.to(logo,  vars(cfg.logo.out),  off(cfg.logo.out.offset));
   if (cfg.logo2) tl.to(logo2, vars(cfg.logo2.out), off(cfg.logo2.out.offset));
   if (withWorm && cfg.worm) tl.to(worm, vars(cfg.worm.out), off(cfg.worm.out.offset));
@@ -339,12 +390,13 @@ function playRun() {
   const intro = run === 0, cfg = intro ? CFG.intro : CFG.loop;
   const slide = intro ? cfg : cfg.slides[(run - 1) % cfg.slides.length];
   if (tl) tl.kill();
-  gsap.set([bg, logo, logo2, worm, symGroup, impressum], { clearProps:"opacity,filter,transform" });
+  gsap.set([bg, logo, logo2, worm, symGroup, impressum, $("chev")], { clearProps:"opacity,filter,transform" });
   const chars = setText(slide.text);
+  const extra = setMore(intro ? {} : slide);
   bg.style.backgroundImage = `url("${slide.bgSrc}")`;
   $("credit").textContent = slide.credit ? `© ${slide.credit.name} (${slide.credit.klasse})` : "";
   layout(cfg);
-  cur = { cfg, chars };
+  cur = { cfg, chars, more:extra.more, info:extra.info };
   tl = buildTimeline(cfg, chars);
   active = tl;
   /* Erst jetzt sichtbar schalten: die Startwerte (Deckkraft 0) sind bereits gesetzt */
@@ -367,6 +419,7 @@ $("portal").addEventListener("click", () => {
   if (stopped || navigating || run === 0 || !cur.cfg.worm) return;
   if (gsap.getProperty(worm, "opacity") < 0.3) return;   // nur klickbar, wenn sichtbar
   stopped = true;
+  if (infoTween) infoTween.kill();
   if (nextCall) nextCall.kill();
   active.kill();
   setPaused(false);
@@ -407,6 +460,7 @@ function navigate(delta) {
   const n = CFG.loop.slides.length;
   const next = (((run - 1) % n) + delta + n) % n;
   if (nextCall) nextCall.kill();
+  if (infoTween) infoTween.kill();
   tl.kill();
   setPaused(false);
   // aktuelle Seite sofort ausblenden, danach die nächste/vorherige einleiten
@@ -415,6 +469,23 @@ function navigate(delta) {
   ex.addLabel("out");
   addOut(ex, cur.cfg, cur.chars, true);
 }
+function moreReady() {   // nur solange die Seite eingeblendet ist und noch nicht ausblendet
+  return !stopped && !navigating && run !== 0 && cur && cur.more.length && active === tl && tl.time() < tl.labels.out
+    && gsap.getProperty(cur.more[0], "opacity") >= 0.3;
+}
+$("moreBtn").addEventListener("click", () => {
+  if (!moreReady()) return;
+  const btn = $("moreBtn"), open = btn.getAttribute("aria-expanded") === "true";
+  if (infoTween) infoTween.kill();
+  btn.setAttribute("aria-expanded", String(!open)); $("infoText").setAttribute("aria-hidden", String(open));
+  if (!open) {
+    setPaused(true);   // Karussell anhalten, weiter geht es nur über das Play-Symbol
+    const { duration, ease, stagger, ...start } = vars(INFO_IN);
+    infoTween = gsap.fromTo(cur.info, start, { opacity:1, filter:"blur(0px)", scale:1, x:0, y:0, duration, ease, stagger });
+  } else {
+    infoTween = gsap.to(cur.info, vars(INFO_OUT));
+  }
+});
 window.addEventListener("resize", () => {
   if (!cur) return;
   applyProfile(); layout(cur.cfg);   // Werte stetig an das neue Seitenverhältnis anpassen
