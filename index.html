@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototyp: relative Werte finden</title>
+<!--
+  Lege diese Datei in einen Ordner zusammen mit:
+  001.jpg (Intro), 002.jpg, 003.jpg, 004.jpg (Karussell), logo.png, logo2.png,
+  wurmloch-news.png, schild-news.png (Wurmloch),
+  Zurueck.png, Stopp.png, play.png, Vor.png (Symbole)
+-->
+<style>
+  html, body { margin:0; height:100%; background:#111; overflow:hidden; }
+  .stage { position:fixed; inset:0; overflow:hidden; }
+  #bg { position:absolute; inset:0; background-size:cover; background-position:50% 50%; background-repeat:no-repeat; }
+  #bg::after { content:""; position:absolute; inset:0; background:rgba(0,0,0,var(--dim, 0)); }
+  .stage > .abs { visibility:hidden; }   /* bis die Animation startet, ist nichts sichtbar */
+  .abs { position:absolute; transform:translate(-50%, -50%); text-align:center; width:max-content; }
+  #textBox { width:max-content; max-width:92%; }
+  #titel { margin:0; line-height:1.2; }
+  .logo { display:block; height:auto; max-width:none; flex:none; }
+
+  /* ---------- Wurmloch (News) ---------- */
+  #wormBox {
+    --img:url("wurmloch-news.png"); --sign-img:url("schild-news.png");
+    --cx:50.3%; --cy:48.7%; --gx:49.8%; --gy:56.2%; --size:7vw;   /* Breite des Wurmlochs (wird per Skript gesetzt) */
+    --sign:.7; --float:5%; --breathe:1.1; --pulse-t:2s; --sway:6deg; --sway-t:4.8s; --dive:10; --ratio:1.9365;
+    --sw:calc(var(--size) * var(--sign));
+  }
+  #worm { transform-origin:50.3% 48.7%; }   /* Zoom-Mittelpunkt = Kern des Wurmlochs */
+  .portal { position:relative; display:block; width:var(--size); aspect-ratio:1; flex:none; cursor:pointer; border:0; padding:0; background:none;
+    -webkit-tap-highlight-color:transparent; animation:float 6s ease-in-out infinite;
+    transition:transform .35s ease, filter .35s ease, opacity .5s ease; }
+  .portal:hover, .portal:focus-visible { transform:scale(1.05); filter:brightness(1.08) saturate(1.1); }
+  .portal:focus-visible { outline:3px solid #8fa4ff; outline-offset:8px; border-radius:50%; }
+  .body { position:absolute; inset:0; pointer-events:none; transform-origin:var(--cx) var(--cy); animation:breathe 7s ease-in-out infinite; }
+  .img { position:absolute; inset:0; background:var(--img) center/100% 100% no-repeat; }
+  .glow { position:absolute; pointer-events:none; left:calc(var(--gx) - 20%); top:calc(var(--gy) - 20%); width:40%; aspect-ratio:1; border-radius:50%;
+    background:radial-gradient(circle,rgba(255,244,200,.85) 0%,rgba(255,214,120,.45) 38%,rgba(255,200,90,0) 70%); mix-blend-mode:screen;
+    animation:pulse var(--pulse-t,3.4s) ease-in-out infinite; }
+  .orbit { position:absolute; pointer-events:none; left:calc(var(--cx) - var(--r)); top:calc(var(--cy) - var(--r)); width:calc(var(--r) * 2); aspect-ratio:1; }
+  .orbit::after { content:""; position:absolute; left:50%; top:0; width:var(--s,2.4%); aspect-ratio:1; translate:-50% -50%; border-radius:50%;
+    background:radial-gradient(circle,#fff 0%,#ffe08a 45%,rgba(255,200,80,0) 72%); box-shadow:0 0 calc(var(--size) * .074) calc(var(--size) * .022) rgba(255,214,110,.7);
+    animation:twinkle 2.8s ease-in-out var(--dly,0s) infinite; }
+  @keyframes float { 0%,100%{translate:0 0} 50%{translate:0 calc(var(--float) * -1)} }
+  @keyframes breathe { 0%,100%{scale:1} 50%{scale:var(--breathe)} }
+  @keyframes pulse { 0%,100%{opacity:.35;scale:.85} 50%{opacity:.9;scale:1.1} }
+  @keyframes twinkle { 0%,100%{opacity:.25} 50%{opacity:1} }
+  .portal.dive { transform:scale(var(--dive)); opacity:0; filter:brightness(1.5); transition:transform .9s cubic-bezier(.6,0,.9,.4), opacity .9s ease-in, filter .9s; }
+  .portal.back { transition:none; transform:scale(.6); opacity:0; }
+  .signbox { position:absolute; left:0; width:100%; top:94%; height:0; display:flex; justify-content:center; align-items:flex-start; pointer-events:none; }
+  .sign { flex:none; width:var(--sw); aspect-ratio:var(--ratio); margin-top:calc(var(--sw) / var(--ratio) / -2);
+    background:var(--sign-img) center/100% 100% no-repeat; filter:drop-shadow(0 .6em .9em rgba(10,8,40,.45)); font-size:calc(var(--sw) / 40);
+    transform-origin:50% 40%; animation:sway var(--sway-t,4.8s) ease-in-out infinite; }
+  @keyframes sway { 0%,100%{rotate:calc(var(--sway) * -1);translate:0 0} 50%{rotate:var(--sway);translate:0 2%} }
+  @media (prefers-reduced-motion:reduce) { .portal,.body,.glow,.orbit,.orbit::after,.sign{animation:none} .glow{opacity:.5} .portal.dive{transform:none;filter:none} }
+
+  /* ---------- Steuer-Symbole unten in der Bildmitte ---------- */
+  #symbole { z-index:6; }
+  #symGroup { display:flex; align-items:center; }
+  #impBox { transform:translateX(-50%); z-index:7; font:400 var(--small, 0.8vw)/1.2 system-ui, sans-serif; }   /* eigene Ebene, unabhängig von den Logo-Grenzen */
+  .impressum { display:block; pointer-events:auto; cursor:pointer; white-space:nowrap; color:#fff; text-decoration:none;
+    font:400 var(--small, 0.8vw)/1.2 system-ui, sans-serif; text-shadow:0 .08em .25em rgba(0,0,0,.85); }
+  .impressum:hover, .impressum:focus-visible { text-decoration:underline; }
+  .stopwrap { position:relative; display:flex; }
+  .credit { position:absolute; left:50%; top:100%; transform:translateX(-50%); margin-top:calc(var(--cgap, 0) * 1vh); white-space:nowrap; pointer-events:none;
+    font:400 var(--small, 0.8vw)/1.2 system-ui, sans-serif; color:#fff; text-shadow:0 .08em .25em rgba(0,0,0,.85); }
+  .sbtn { display:block; border:0; padding:0; background:none; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:transform .15s ease, opacity .2s ease; }
+  .sbtn img { display:block; height:auto; max-width:none; user-select:none; -webkit-user-drag:none; }
+  .sbtn:hover { transform:scale(1.12); }
+  .sbtn:active { transform:scale(.92); }
+  .sbtn:focus-visible { outline:2px solid #8fa4ff; outline-offset:4px; border-radius:6px; }
+
+  /* ---------- Einstell-Panel (nur Prototyp) ---------- */
+  #regler { position:fixed; top:10px; right:10px; z-index:50; width:310px; max-height:calc(100vh - 20px); overflow-y:auto; background:rgba(20,20,26,.93); color:#fff;
+    font:12px/1.4 system-ui, sans-serif; border-radius:10px; padding:10px 12px; box-shadow:0 6px 24px rgba(0,0,0,.45); }
+  #regler.links { left:10px; right:auto; }
+  #regler.zu > :not(.kopf) { display:none; }
+  #regler .kopf { display:flex; justify-content:space-between; align-items:center; gap:6px; font-weight:600; }
+  #regler button { background:#4f46e5; color:#fff; border:0; border-radius:6px; padding:5px 8px; cursor:pointer; font:inherit; }
+  #regler button.sek { background:#3a3a46; }
+  #regler details { margin-top:8px; border-top:1px solid #34343d; padding-top:6px; }
+  #regler summary { cursor:pointer; font-weight:600; color:#cfd0ff; }
+  #regler .zeile { display:grid; grid-template-columns:116px 1fr 62px; align-items:center; gap:6px; margin:4px 0; }
+  #regler .zeile label { color:#dde; }
+  #regler output { text-align:right; color:#ccd; font-variant-numeric:tabular-nums; }
+  #regler input[type=range] { width:100%; accent-color:#8b85ff; }
+  #regler .info { color:#aab; margin:6px 0; }
+  #regler .btnrow { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
+  #regler textarea { width:100%; height:150px; background:#111; color:#dde; border:1px solid #444; border-radius:6px; font:11px/1.4 ui-monospace, monospace; resize:vertical; }
+  #fehlt { position:fixed; left:8px; bottom:8px; z-index:9; font:12px system-ui, sans-serif; background:#fff3cd; color:#664d03; padding:6px 8px; border-radius:6px; display:none; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div id="bg"></div>
+  <div id="logoBox" class="abs"><img id="logo" class="logo" src="logo.png" alt="Logo"></div>
+  <div id="logoBox2" class="abs"><img id="logo2" class="logo" src="logo2.png" alt="Logo 2"></div>
+  <div id="wormBox" class="abs"><div id="worm">
+    <button class="portal" id="portal" aria-label="News – Wurmloch betreten">
+      <span class="body"><span class="img"></span><span class="glow"></span></span>
+      <i class="orbit" style="--r:9%;--t:9s;--dly:-1s;--s:2.2%"></i>
+      <i class="orbit" style="--r:14%;--t:14s;--dly:-4s;--s:2.6%"></i>
+      <i class="orbit" style="--r:19%;--t:11s;--dly:-7s;--dir:normal;--s:2%"></i>
+      <i class="orbit" style="--r:24%;--t:18s;--dly:-2s;--s:2.8%"></i>
+      <i class="orbit" style="--r:28%;--t:22s;--dly:-12s;--dir:normal;--s:2.2%"></i>
+      <i class="orbit" style="--r:16%;--t:16s;--dly:-9s;--s:1.8%"></i>
+      <span class="signbox"><span class="sign" role="img" aria-label="News"></span></span>
+    </button>
+  </div></div>
+  <div id="symbole" class="abs"><div id="symGroup">
+    <button class="sbtn" id="btnZurueck" type="button" aria-label="Zurück"><img id="symZurueck" src="Zurueck.png" alt=""></button>
+    <span class="stopwrap">
+      <button class="sbtn" id="btnStopp"   type="button" aria-label="Stopp / Fortsetzen"><img id="symStopp" src="Stopp.png" alt=""></button>
+      <span class="credit" id="credit"></span>   <!-- Bildnachweis, zentriert unter dem Stopp/Play-Button -->
+    </span>
+    <button class="sbtn" id="btnVor"     type="button" aria-label="Vor"><img id="symVor" src="Vor.png" alt=""></button>
+  </div></div>
+  <div id="impBox" class="abs"><a id="impressum" class="impressum" href="#">Impressum</a></div>
+  <div id="textBox" class="abs"><h1 id="titel"></h1></div>
+</div>
+<div id="regler">
+  <div class="kopf"><span>Relative Werte finden</span><span><button class="sek" id="rSeite" type="button">links/rechts</button> <button id="rTog" type="button">ein/aus</button></span></div>
+  <div class="info" id="rInfo"></div>
+  <div class="btnrow"><button id="rIntro" type="button">Intro neu starten</button><button id="rLoop" type="button">Schleife neu starten</button></div>
+  <div id="rGroups"></div>
+  <details open><summary>Werte zum Übernehmen</summary>
+    <textarea id="rOut" readonly></textarea>
+    <div class="btnrow"><button id="rCopy" type="button">Werte kopieren</button></div>
+  </details>
+</div>
+<div id="fehlt"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
+<script>
+gsap.registerPlugin(SplitText);
+
+/* ============================================================
+   EINSTELLUNGEN
+   Positionen x/y in Prozent der Bühne. Zeiten in Sekunden.
+   "at" = absolute Startzeit beim Einblenden,
+   "offset" = Versatz zum Ausblenden-Zeitpunkt (Label "out").
+   ============================================================ */
+/* Umrechnung der bisherigen Pixelwerte in relative Einheiten, bezogen auf die aktuelle Fenstergröße.
+   Beim Start sieht das Design also zunächst genauso aus wie vorher. Danach stellst du alles mit den Reglern ein.
+   vw = % der Fensterbreite, vh = % der Fensterhöhe, vmin = % der kürzeren Fensterseite. */
+const W  = px => +(px / innerWidth  * 100).toFixed(2);
+const Hh = px => +(px / innerHeight * 100).toFixed(2);
+const M  = px => +(px / Math.min(innerWidth, innerHeight) * 100).toFixed(2);
+
+/* Weichzeichner (vmin) und Ausblend-Versatz (vh) gelten für alle Elemente gemeinsam */
+const REL = {
+  blur: { in:M(15), out:M(12), bgIn:M(15), bgOut:M(20) },   // Einblenden / Ausblenden / Hintergrund ein / Hintergrund aus
+  moveOut: Hh(-20),                                          // Ausblend-Versatz nach oben (negativ = nach oben)
+  creditGap: +(Hh(6) - 1).toFixed(2)                         // Abstand Bildnachweis zur Steuerleiste (vh)
+};
+
+const BG_OUT = { blur:"bgOut", scale:1, y:0,     duration:1,   ease:"power2.in", offset:0 };
+const TXT_OUT = { blur:"out",  scale:1, y:"out", duration:0.5, ease:"power2.in", each:0.03, from:"end", offset:0 };
+const LOGO_OUT = offset => ({ blur:"out", scale:1, y:"out", duration:0.5, ease:"power2.in", offset });
+
+const CFG = {
+  fontVw: W(60),      // Textgröße in vw
+  smallVw: W(12),     // Schrift von Bildnachweis und Impressum in vw
+  wormVw: W(135),     // Breite des Wurmlochs in vw (das Schild folgt automatisch)
+  color: "#ffffff", weight: 500, font: "system-ui, sans-serif",
+  dim: 0.3,            // Abdunkeln des Hintergrunds (0 bis 0.9)
+
+  /* ---------- 1. Durchlauf (einmalig) ---------- */
+  intro: {
+    bgSrc: "001.jpg", text: "Willkommen an der",
+    hold: 1, pauseAfter: 0,
+    bg:    { in:{ at:0, blur:"bgIn", scale:1.4, duration:2.5, ease:"power1.in" }, out:BG_OUT },
+    textPos:{ x:50, y:30 },
+    textIn:{ at:1, blur:"in", scale:1.4, duration:1.5, ease:"power2.out", each:0.15, from:"start" }, textOut:TXT_OUT,
+    logo:  null,   // logo.png ist im ersten Durchlauf nicht sichtbar
+    logo2: { x:50, y:50, width:W(350), plate:false, in:{ at:3.75, blur:"in", scale:1.4, duration:2, ease:"power1.in" }, out:LOGO_OUT(0.15) }
+  },
+
+  /* ---------- ab 2. Durchlauf: Schleife (endlos) ---------- */
+  loop: {
+    slides: [
+      // credit: Name des Kindes, das das Foto aufgenommen hat, und Klasse (Platzhalter bitte ersetzen)
+      { bgSrc:"002.jpg", text:"Unser Sportplatz",   credit:{ name:"Max Mustermann", klasse:"M14" } },
+      { bgSrc:"003.jpg", text:"Text für 003.jpg",   credit:{ name:"Erika Beispiel", klasse:"ehemals M7" } },
+      { bgSrc:"004.jpg", text:"Text für 004.jpg",   credit:{ name:"Name Nachname",  klasse:"M14" } }
+    ],
+    hold: 2.5, pauseAfter: 0.5,
+    bg:    { in:{ at:0, blur:"bgIn", scale:1.4, duration:2.5, ease:"power2.out" }, out:BG_OUT },
+    textPos:{ x:50, y:10 },
+    textIn:{ at:0.5, blur:"in", scale:1.4, duration:1, ease:"power2.out", each:0.1, from:"start" }, textOut:TXT_OUT,
+    logo:  { x:8,  y:93, width:W(200), plate:false, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) },
+    logo2: { x:94, y:92, width:W(150), plate:false, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.15) },
+    syms:  { x:50, y:94, gap:W(10), back:W(30), stop:W(40), next:W(30),   // Breiten in vw
+             in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) },
+    impressum: true,   // Schriftzug unter logo2.png (blendet exakt wie logo2.png ein und aus)
+    impressumDx: 0.95, // waagerechter Versatz gegenüber der Mitte von logo2.png in vw (positiv = nach rechts)
+    worm:  { x:6, y:12, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) }
+  }
+};
+
+/* ============================================================
+   ABLAUF (muss normalerweise nicht verändert werden)
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const bg = $("bg"), titel = $("titel"), logo = $("logo"), logo2 = $("logo2"), worm = $("worm"), symGroup = $("symGroup"), impressum = $("impressum");
+const vars = p => ({
+  opacity:0, filter:`blur(${REL.blur[p.blur] * Math.min(innerWidth, innerHeight) / 100}px)`, scale:p.scale,
+  x:0, y:(p.y === "out" ? REL.moveOut : (p.y || 0)) * innerHeight / 100, rotation:0, rotationX:0,
+  transformPerspective:600, duration:p.duration, ease:p.ease,
+  ...(p.each != null ? { stagger:{ each:p.each, from:p.from } } : {})
+});
+const off = o => "out" + (o < 0 ? "-=" : "+=") + Math.abs(o);
+
+Object.assign(titel.style, { color:CFG.color, fontWeight:CFG.weight, fontFamily:CFG.font });
+bg.style.setProperty("--dim", CFG.dim);
+let split;
+function setText(t) {
+  if (split) split.revert();
+  titel.textContent = t;
+  split = new SplitText(titel, { type:"chars" });
+  return split.chars;
+}
+
+function placeLogo(img, box, c) {
+  if (!c) { img.style.display = "none"; return; }
+  img.style.display = "";
+  img.style.width = c.width + "vw";
+  img.style.background = c.plate ? "#fff" : "none";
+  img.style.padding = c.plate ? "0.9vw" : "0";
+  img.style.borderRadius = c.plate ? "0.8vw" : "0";
+  box.style.left = c.x + "%"; box.style.top = c.y + "%";
+}
+
+function placeSyms(c) {
+  const box = $("symbole");
+  if (!c) { box.style.display = "none"; return; }
+  box.style.display = "";
+  box.style.left = c.x + "%"; box.style.top = c.y + "%"; symGroup.style.gap = c.gap + "vw";
+  $("symZurueck").style.width = c.back + "vw"; $("symStopp").style.width = c.stop + "vw"; $("symVor").style.width = c.next + "vw";
+}
+
+/* Impressum: gleiche Höhe wie der Bildnachweis, waagerecht mittig unter logo2.png */
+function placeImpressum(cfg) {
+  if (!(cfg.logo2 && cfg.impressum && cfg.syms)) return;
+  const box = $("symbole"), sw = document.querySelector(".stopwrap");
+  const gap = parseFloat(getComputedStyle($("credit")).marginTop) || 0;
+  const top = box.offsetTop - box.offsetHeight / 2 + sw.offsetTop + sw.offsetHeight + gap;   // = Oberkante des Bildnachweises
+  $("impBox").style.top = top + "px";
+  $("impBox").style.left = `calc(${cfg.logo2.x}% + ${cfg.impressumDx || 0}vw)`;
+}
+
+/* Wendet alle Größen und Positionen an (auch live durch die Regler) */
+function layout(cfg) {
+  const root = document.documentElement.style;
+  titel.style.fontSize = CFG.fontVw + "vw";
+  root.setProperty("--small", CFG.smallVw + "vw");
+  root.setProperty("--cgap", REL.creditGap);
+  $("wormBox").style.setProperty("--size", CFG.wormVw + "vw");
+  $("textBox").style.left = cfg.textPos.x + "%"; $("textBox").style.top = cfg.textPos.y + "%";
+  placeLogo(logo,  $("logoBox"),  cfg.logo);
+  placeLogo(logo2, $("logoBox2"), cfg.logo2);
+  placeSyms(cfg.syms);
+  impressum.style.display = (cfg.logo2 && cfg.impressum) ? "" : "none";
+  placeImpressum(cfg);
+  worm.style.display = cfg.worm ? "" : "none";
+  if (cfg.worm) { $("wormBox").style.left = cfg.worm.x + "%"; $("wormBox").style.top = cfg.worm.y + "%"; }
+}
+
+function buildTimeline(cfg, chars) {
+  const tl = gsap.timeline();
+  tl.from(bg, vars(cfg.bg.in), cfg.bg.in.at);
+  tl.from(chars, vars(cfg.textIn), cfg.textIn.at);
+  if (cfg.logo)  tl.from(logo,  vars(cfg.logo.in),  cfg.logo.in.at);
+  if (cfg.logo2) tl.from(logo2, vars(cfg.logo2.in), cfg.logo2.in.at);
+  if (cfg.worm)  tl.from(worm,  vars(cfg.worm.in),  cfg.worm.in.at);
+  if (cfg.syms)  tl.from(symGroup, vars(cfg.syms.in), cfg.syms.in.at);
+  if (cfg.logo2 && cfg.impressum) tl.from(impressum, vars(cfg.logo2.in), cfg.logo2.in.at);
+  tl.to({}, { duration:cfg.hold });
+  tl.addLabel("out");
+  addOut(tl, cfg, chars, true);
+  return tl;
+}
+
+/* Ausblenden des aktuellen Bildschirms (Label "out" muss in tl existieren) */
+function addOut(tl, cfg, chars, withWorm) {
+  tl.to(chars, vars(cfg.textOut), off(cfg.textOut.offset));
+  if (cfg.logo)  tl.to(logo,  vars(cfg.logo.out),  off(cfg.logo.out.offset));
+  if (cfg.logo2) tl.to(logo2, vars(cfg.logo2.out), off(cfg.logo2.out.offset));
+  if (withWorm && cfg.worm) tl.to(worm, vars(cfg.worm.out), off(cfg.worm.out.offset));
+  if (cfg.syms) tl.to(symGroup, vars(cfg.syms.out), off(cfg.syms.out.offset));
+  if (cfg.logo2 && cfg.impressum) tl.to(impressum, vars(cfg.logo2.out), off(cfg.logo2.out.offset));
+  tl.to(bg, vars(cfg.bg.out), off(cfg.bg.out.offset));
+}
+
+let run = 0, tl, active, nextCall, cur, stopped = false, paused = false, navigating = false;
+function playRun() {
+  const intro = run === 0, cfg = intro ? CFG.intro : CFG.loop;
+  const slide = intro ? cfg : cfg.slides[(run - 1) % cfg.slides.length];
+  if (tl) tl.kill();
+  gsap.set([bg, logo, logo2, worm, symGroup, impressum], { clearProps:"opacity,filter,transform" });
+  const chars = setText(slide.text);
+  bg.style.backgroundImage = `url("${slide.bgSrc}")`;
+  $("credit").textContent = slide.credit ? `© ${slide.credit.name} (${slide.credit.klasse})` : "";
+  layout(cfg);
+  cur = { cfg, chars };
+  tl = buildTimeline(cfg, chars);
+  active = tl;
+  /* Erst jetzt sichtbar schalten: die Startwerte (Deckkraft 0) sind bereits gesetzt */
+  document.querySelectorAll(".stage > .abs").forEach(e => e.style.visibility = "visible");
+  tl.eventCallback("onComplete", () => { if (stopped) return; run++; nextCall = gsap.delayedCall(cfg.pauseAfter, playRun); });
+}
+
+/* ---------- Klick auf das Wurmloch ----------
+   Der aktuelle Bildschirm blendet sofort aus (wie beim normalen Ausblenden),
+   gleichzeitig wird dynamisch in den Kern des Wurmlochs gezoomt. Danach: Blackscreen. */
+const ZOOM_SCALE = 60;      // Endvergrößerung beim Zoom
+const ZOOM_TIME  = 1.8;     // Dauer des Zooms in Sekunden
+const ZOOM_EASE  = "power3.in";
+
+function onWormholeEnd() {
+  /* Blackscreen. Hier später den nächsten Bildschirm starten. */
+}
+
+$("portal").addEventListener("click", () => {
+  if (stopped || navigating || run === 0 || !cur.cfg.worm) return;
+  if (gsap.getProperty(worm, "opacity") < 0.3) return;   // nur klickbar, wenn sichtbar
+  stopped = true;
+  if (nextCall) nextCall.kill();
+  active.kill();
+  setPaused(false);
+  $("portal").style.pointerEvents = "none";
+  $("wormBox").style.zIndex = 5;
+  if (/blur\(0(px)?\)/.test(worm.style.filter)) worm.style.filter = "none";
+
+  // Kern des Wurmlochs auf dem Bildschirm (Kern liegt bei 50,3 % / 48,7 %)
+  const r = $("portal").getBoundingClientRect();
+  const dx = innerWidth  / 2 - (r.left + r.width  * 0.503);
+  const dy = innerHeight / 2 - (r.top  + r.height * 0.487);
+
+  // 1) aktueller Bildschirm blendet sofort aus
+  const ex = gsap.timeline();
+  ex.addLabel("out");
+  addOut(ex, cur.cfg, cur.chars, false);
+
+  // 2) gleichzeitig: Flug in den Kern des Wurmlochs
+  const z = gsap.timeline({ onComplete: () => { worm.style.display = "none"; onWormholeEnd(); } });
+  z.to(worm, { x: gsap.getProperty(worm, "x") + dx, y: gsap.getProperty(worm, "y") + dy, scale: ZOOM_SCALE, duration: ZOOM_TIME, ease: ZOOM_EASE }, 0)
+   .to(worm, { opacity: 0, duration: 0.5, ease: "power1.in" }, ZOOM_TIME - 0.5);
+});
+
+/* ---------- Steuerung: Zurück / Stopp / Vor ---------- */
+function setPaused(p) {
+  paused = p;
+  if (active) active.paused(p);
+  if (nextCall) nextCall.paused(p);
+  $("symStopp").src = p ? "play.png" : "Stopp.png";          // angehalten: Play-Symbol, sonst Stopp-Symbol
+  $("btnStopp").setAttribute("aria-label", p ? "Fortsetzen" : "Stopp");
+}
+function controlsReady() {   // nur ab dem Karussell und solange die Symbole sichtbar sind
+  return !stopped && !navigating && run !== 0 && cur && cur.cfg.syms && gsap.getProperty(symGroup, "opacity") >= 0.3;
+}
+function navigate(delta) {
+  if (!controlsReady()) return;
+  navigating = true;
+  const n = CFG.loop.slides.length;
+  const next = (((run - 1) % n) + delta + n) % n;
+  if (nextCall) nextCall.kill();
+  tl.kill();
+  setPaused(false);
+  // aktuelle Seite sofort ausblenden, danach die nächste/vorherige einleiten
+  const ex = gsap.timeline({ onComplete: () => { navigating = false; run = next + 1; playRun(); } });
+  active = ex;
+  ex.addLabel("out");
+  addOut(ex, cur.cfg, cur.chars, true);
+}
+window.addEventListener("resize", () => { if (cur) placeImpressum(cur.cfg); });
+$("btnVor").addEventListener("click", () => navigate(1));
+$("btnZurueck").addEventListener("click", () => navigate(-1));
+$("btnStopp").addEventListener("click", () => { if (controlsReady()) setPaused(!paused); });
+
+/* Impressum: Ziel später hier eintragen, z. B. "impressum.html" */
+const IMPRESSUM_URL = "";
+impressum.addEventListener("click", e => {
+  e.preventDefault();
+  if (stopped || gsap.getProperty(impressum, "opacity") < 0.3) return;
+  if (IMPRESSUM_URL) location.href = IMPRESSUM_URL;
+});
+
+/* Bilder vorladen und fehlende Dateien anzeigen */
+const files = ["Zurueck.png", "Stopp.png", "play.png", "Vor.png", "logo.png", "logo2.png", "wurmloch-news.png", "schild-news.png", CFG.intro.bgSrc, ...CFG.loop.slides.map(x => x.bgSrc)];
+const missing = [];
+let pending = files.length;
+files.forEach(f => {
+  const i = new Image();
+  i.onerror = () => { missing.push(f); done(); };
+  i.onload = done;
+  i.src = f;
+});
+function done() {
+  if (--pending) return;
+  if (missing.length) { const n = $("fehlt"); n.style.display = "block"; n.textContent = "Datei nicht gefunden: " + missing.join(", "); }
+  playRun();
+}
+</script>
+<script>
+/* Wurmloch: Drehung, Glühwürmchen und Klick-Reise (aus wurmloch-news-final.html) */
+(function(){
+  var SPIN_SECONDS = 40;      /* Drehdauer einer vollen Umdrehung */
+  var CLOCKWISE    = false;   /* false = gegen den Uhrzeigersinn */
+  var FIREFLY_SPEED = 4;      /* Glühwürmchen-Tempo (1 = Standard) */
+  var FIREFLY_COUNT = 6;      /* Anzahl sichtbarer Glühwürmchen (0-6) */
+
+  var bodyEl=document.querySelector('.body');
+  var orbits=Array.prototype.map.call(document.querySelectorAll('.orbit'),function(el,i){
+    var t=parseFloat(el.style.getPropertyValue('--t')),d=parseFloat(el.style.getPropertyValue('--dly'))||0;
+    var dir=el.style.getPropertyValue('--dir').trim()==='normal'?1:-1;
+    if(i>=FIREFLY_COUNT)el.style.display='none';
+    return {el:el,t:t,dir:dir,ang:dir*(((-d/t)*360)%360)};
+  });
+
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var spinDir=CLOCKWISE?1:-1,bodyAng=0,last=null;
+  (function tick(ts){
+    if(last!==null){
+      var dt=Math.min((ts-last)/1000,0.1);
+      bodyAng=(bodyAng+spinDir*dt*360/SPIN_SECONDS)%360;
+      bodyEl.style.rotate=bodyAng+'deg';
+      for(var i=0;i<orbits.length;i++){
+        var o=orbits[i];
+        o.ang=(o.ang+o.dir*dt*360*FIREFLY_SPEED/o.t)%360;
+        o.el.style.rotate=o.ang+'deg';
+      }
+    }
+    last=ts;
+    requestAnimationFrame(tick);
+  })(performance.now());
+})();
+</script>
+<script>
+/* Einstell-Panel: Werte live ändern, unten kopieren und mir schicken */
+(function(){
+  const GR = [
+    ["Größen (vw = % der Fensterbreite)", [
+      ["Text-Schriftgröße",       CFG, "fontVw", 1, 10, 0.05, " vw"],
+      ["Logo (Schleife)",         CFG.loop.logo, "width", 2, 30, 0.1, " vw"],
+      ["Logo 2 (Schleife)",       CFG.loop.logo2, "width", 2, 30, 0.1, " vw"],
+      ["Logo 2 (Intro)",          CFG.intro.logo2, "width", 5, 40, 0.1, " vw"],
+      ["Wurmloch (Schild folgt)", CFG, "wormVw", 3, 25, 0.1, " vw"],
+      ["Symbol Zurück",           CFG.loop.syms, "back", 0.5, 8, 0.05, " vw"],
+      ["Symbol Stopp/Play",       CFG.loop.syms, "stop", 0.5, 8, 0.05, " vw"],
+      ["Symbol Vor",              CFG.loop.syms, "next", 0.5, 8, 0.05, " vw"],
+      ["Abstand Symbole",         CFG.loop.syms, "gap", 0, 5, 0.05, " vw"],
+      ["Schrift Nachweis/Impr.",  CFG, "smallVw", 0.4, 2.5, 0.02, " vw"]
+    ]],
+    ["Abstände", [
+      ["Nachweis unter Leiste",   REL, "creditGap", -3, 5, 0.05, " vh"],
+      ["Impressum Versatz X",     CFG.loop, "impressumDx", -5, 15, 0.05, " vw"]
+    ]],
+    ["Bewegung und Weichzeichner (wirkt ab nächstem Abspielen)", [
+      ["Ausblend-Versatz Y",      REL, "moveOut", -10, 10, 0.1, " vh"],
+      ["Blur Einblenden",         REL.blur, "in", 0, 5, 0.05, " vmin"],
+      ["Blur Ausblenden",         REL.blur, "out", 0, 5, 0.05, " vmin"],
+      ["Blur Hintergrund ein",    REL.blur, "bgIn", 0, 5, 0.05, " vmin"],
+      ["Blur Hintergrund aus",    REL.blur, "bgOut", 0, 5, 0.05, " vmin"]
+    ]],
+    ["Positionen Intro (% der Bühne)", [
+      ["Text X", CFG.intro.textPos, "x", 0, 100, 0.1, " %"], ["Text Y", CFG.intro.textPos, "y", 0, 100, 0.1, " %"],
+      ["Logo 2 X", CFG.intro.logo2, "x", 0, 100, 0.1, " %"], ["Logo 2 Y", CFG.intro.logo2, "y", 0, 100, 0.1, " %"]
+    ]],
+    ["Positionen Schleife (% der Bühne)", [
+      ["Text X", CFG.loop.textPos, "x", 0, 100, 0.1, " %"], ["Text Y", CFG.loop.textPos, "y", 0, 100, 0.1, " %"],
+      ["Logo X", CFG.loop.logo, "x", 0, 100, 0.1, " %"], ["Logo Y", CFG.loop.logo, "y", 0, 100, 0.1, " %"],
+      ["Logo 2 X", CFG.loop.logo2, "x", 0, 100, 0.1, " %"], ["Logo 2 Y", CFG.loop.logo2, "y", 0, 100, 0.1, " %"],
+      ["Symbole X", CFG.loop.syms, "x", 0, 100, 0.1, " %"], ["Symbole Y", CFG.loop.syms, "y", 0, 100, 0.1, " %"],
+      ["Wurmloch X", CFG.loop.worm, "x", 0, 100, 0.1, " %"], ["Wurmloch Y", CFG.loop.worm, "y", 0, 100, 0.1, " %"]
+    ]]
+  ];
+  const $r = id => document.getElementById(id), box = $r("rGroups");
+  function report() {
+    $r("rOut").value = GR.map(g => g[0] + "\n" + g[1].map(d => "  " + d[0] + ": " + (+d[1][d[2]]).toFixed(2) + d[6].trimEnd()).join("\n")).join("\n\n");
+  }
+  function fmt(v){ return (+v).toFixed(2).replace(/\.?0+$/, ""); }
+  GR.forEach((g, gi) => {
+    const det = document.createElement("details"); if (gi < 2) det.open = true;
+    const sum = document.createElement("summary"); sum.textContent = g[0]; det.append(sum);
+    g[1].forEach(d => {
+      const row = document.createElement("div"); row.className = "zeile";
+      const lab = document.createElement("label"); lab.textContent = d[0];
+      const inp = document.createElement("input"); inp.type = "range"; inp.min = d[3]; inp.max = d[4]; inp.step = d[5]; inp.value = d[1][d[2]];
+      const out = document.createElement("output"); out.textContent = fmt(d[1][d[2]]) + d[6];
+      inp.addEventListener("input", () => { d[1][d[2]] = +inp.value; out.textContent = fmt(inp.value) + d[6]; if (cur) layout(cur.cfg); report(); });
+      row.append(lab, inp, out); det.append(row);
+    });
+    box.append(det);
+  });
+  report();
+
+  function restartAt(r) {
+    if (nextCall) nextCall.kill();
+    if (active) active.kill();
+    stopped = false; navigating = false; setPaused(false);
+    $r("portal").style.pointerEvents = ""; $r("wormBox").style.zIndex = "";
+    run = r; playRun();
+  }
+  $r("rIntro").addEventListener("click", () => restartAt(0));
+  $r("rLoop").addEventListener("click", () => restartAt(1));
+  $r("rTog").addEventListener("click", () => $r("regler").classList.toggle("zu"));
+  $r("rSeite").addEventListener("click", () => $r("regler").classList.toggle("links"));
+  $r("rCopy").addEventListener("click", function(){
+    const t = $r("rOut"); t.select(); const b = this;
+    try { navigator.clipboard.writeText(t.value); } catch(e) { document.execCommand("copy"); }
+    b.textContent = "Kopiert ✓"; setTimeout(() => b.textContent = "Werte kopieren", 1200);
+  });
+  function info() { $r("rInfo").textContent = "Startwerte = bisherige Pixelwerte, umgerechnet für dieses Fenster (" + innerWidth + " × " + innerHeight + " px)."; }
+  info(); window.addEventListener("resize", info);
+})();
+</script>
+</body>
+</html>
