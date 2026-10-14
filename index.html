@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prototyp: relative Werte finden</title>
+<title>Intro-Karussell</title>
 <!--
   Lege diese Datei in einen Ordner zusammen mit:
   001.jpg (Intro), 002.jpg, 003.jpg, 004.jpg (Karussell), logo.png, logo2.png,
@@ -72,23 +72,6 @@
   .sbtn:active { transform:scale(.92); }
   .sbtn:focus-visible { outline:2px solid #8fa4ff; outline-offset:4px; border-radius:6px; }
 
-  /* ---------- Einstell-Panel (nur Prototyp) ---------- */
-  #regler { position:fixed; top:10px; right:10px; z-index:50; width:310px; max-height:calc(100vh - 20px); overflow-y:auto; background:rgba(20,20,26,.93); color:#fff;
-    font:12px/1.4 system-ui, sans-serif; border-radius:10px; padding:10px 12px; box-shadow:0 6px 24px rgba(0,0,0,.45); }
-  #regler.links { left:10px; right:auto; }
-  #regler.zu > :not(.kopf) { display:none; }
-  #regler .kopf { display:flex; justify-content:space-between; align-items:center; gap:6px; font-weight:600; }
-  #regler button { background:#4f46e5; color:#fff; border:0; border-radius:6px; padding:5px 8px; cursor:pointer; font:inherit; }
-  #regler button.sek { background:#3a3a46; }
-  #regler details { margin-top:8px; border-top:1px solid #34343d; padding-top:6px; }
-  #regler summary { cursor:pointer; font-weight:600; color:#cfd0ff; }
-  #regler .zeile { display:grid; grid-template-columns:116px 1fr 62px; align-items:center; gap:6px; margin:4px 0; }
-  #regler .zeile label { color:#dde; }
-  #regler output { text-align:right; color:#ccd; font-variant-numeric:tabular-nums; }
-  #regler input[type=range] { width:100%; accent-color:#8b85ff; }
-  #regler .info { color:#aab; margin:6px 0; }
-  #regler .btnrow { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
-  #regler textarea { width:100%; height:150px; background:#111; color:#dde; border:1px solid #444; border-radius:6px; font:11px/1.4 ui-monospace, monospace; resize:vertical; }
   #fehlt { position:fixed; left:8px; bottom:8px; z-index:9; font:12px system-ui, sans-serif; background:#fff3cd; color:#664d03; padding:6px 8px; border-radius:6px; display:none; }
 </style>
 </head>
@@ -120,16 +103,6 @@
   <div id="impBox" class="abs"><a id="impressum" class="impressum" href="#">Impressum</a></div>
   <div id="textBox" class="abs"><h1 id="titel"></h1></div>
 </div>
-<div id="regler">
-  <div class="kopf"><span>Relative Werte finden</span><span><button class="sek" id="rSeite" type="button">links/rechts</button> <button id="rTog" type="button">ein/aus</button></span></div>
-  <div class="info" id="rInfo"></div>
-  <div class="btnrow"><button id="rIntro" type="button">Intro neu starten</button><button id="rLoop" type="button">Schleife neu starten</button></div>
-  <div id="rGroups"></div>
-  <details open><summary>Werte zum Übernehmen</summary>
-    <textarea id="rOut" readonly></textarea>
-    <div class="btnrow"><button id="rCopy" type="button">Werte kopieren</button></div>
-  </details>
-</div>
 <div id="fehlt"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
@@ -143,28 +116,41 @@ gsap.registerPlugin(SplitText);
    "at" = absolute Startzeit beim Einblenden,
    "offset" = Versatz zum Ausblenden-Zeitpunkt (Label "out").
    ============================================================ */
-/* Umrechnung der bisherigen Pixelwerte in relative Einheiten, bezogen auf die aktuelle Fenstergröße.
-   Beim Start sieht das Design also zunächst genauso aus wie vorher. Danach stellst du alles mit den Reglern ein.
-   vw = % der Fensterbreite, vh = % der Fensterhöhe, vmin = % der kürzeren Fensterseite. */
-const W  = px => +(px / innerWidth  * 100).toFixed(2);
-const Hh = px => +(px / innerHeight * 100).toFixed(2);
-const M  = px => +(px / Math.min(innerWidth, innerHeight) * 100).toFixed(2);
+/* ---------- Feste relative Werte, getrennt für Querformat und Hochformat ----------
+   vw = % der Fensterbreite, vh = % der Fensterhöhe, vmin = % der kürzeren Fensterseite.
+   Querformat ermittelt bei 1536 x 695 px, Hochformat bei 394 x 734 px.
+   Welches Profil gilt, richtet sich automatisch nach dem Seitenverhältnis des Fensters. */
+const PROFILES = {
+  land: {
+    fontVw:3.91, logoVw:13.02, logo2Vw:9.77, introLogo2Vw:22.79, wormVw:7.00,
+    back:1.95, stop:2.60, next:1.95, gap:0.65, smallVw:0.78,
+    creditGap:-0.14, impressumDx:0.95,
+    moveOut:-2.88, blurIn:2.16, blurOut:1.73, blurBgIn:2.16, blurBgOut:2.88,
+    intro:{ text:{x:50, y:30}, logo2:{x:50, y:50} },
+    loop: { text:{x:50, y:10}, logo:{x:8, y:93}, logo2:{x:94, y:92}, syms:{x:50, y:94}, worm:{x:5, y:12} }
+  },
+  port: {
+    fontVw:8.10, logoVw:30.00, logo2Vw:19.90, introLogo2Vw:40.00, wormVw:20.00,
+    back:5.00, stop:7.00, next:5.00, gap:2.00, smallVw:2.20,
+    creditGap:-0.18, impressumDx:-3.95,
+    moveOut:-2.72, blurIn:3.81, blurOut:3.05, blurBgIn:3.81, blurBgOut:5.08,
+    intro:{ text:{x:50, y:29.9}, logo2:{x:50, y:40.2} },
+    loop: { text:{x:50, y:18.9}, logo:{x:16, y:96.4}, logo2:{x:87.3, y:95.6}, syms:{x:50, y:96.4}, worm:{x:10.9, y:7.1} }
+  }
+};
+const profileName = () => innerWidth >= innerHeight ? "land" : "port";
 
 /* Weichzeichner (vmin) und Ausblend-Versatz (vh) gelten für alle Elemente gemeinsam */
-const REL = {
-  blur: { in:M(15), out:M(12), bgIn:M(15), bgOut:M(20) },   // Einblenden / Ausblenden / Hintergrund ein / Hintergrund aus
-  moveOut: Hh(-20),                                          // Ausblend-Versatz nach oben (negativ = nach oben)
-  creditGap: +(Hh(6) - 1).toFixed(2)                         // Abstand Bildnachweis zur Steuerleiste (vh)
-};
+const REL = { blur:{ in:0, out:0, bgIn:0, bgOut:0 }, moveOut:0, creditGap:0 };
 
 const BG_OUT = { blur:"bgOut", scale:1, y:0,     duration:1,   ease:"power2.in", offset:0 };
 const TXT_OUT = { blur:"out",  scale:1, y:"out", duration:0.5, ease:"power2.in", each:0.03, from:"end", offset:0 };
 const LOGO_OUT = offset => ({ blur:"out", scale:1, y:"out", duration:0.5, ease:"power2.in", offset });
 
 const CFG = {
-  fontVw: W(60),      // Textgröße in vw
-  smallVw: W(12),     // Schrift von Bildnachweis und Impressum in vw
-  wormVw: W(135),     // Breite des Wurmlochs in vw (das Schild folgt automatisch)
+  fontVw: 0,          // Textgröße in vw (kommt aus dem Profil)
+  smallVw: 0,         // Schrift von Bildnachweis und Impressum in vw (kommt aus dem Profil)
+  wormVw: 0,          // Breite des Wurmlochs in vw (das Schild folgt automatisch)
   color: "#ffffff", weight: 500, font: "system-ui, sans-serif",
   dim: 0.3,            // Abdunkeln des Hintergrunds (0 bis 0.9)
 
@@ -176,7 +162,7 @@ const CFG = {
     textPos:{ x:50, y:30 },
     textIn:{ at:1, blur:"in", scale:1.4, duration:1.5, ease:"power2.out", each:0.15, from:"start" }, textOut:TXT_OUT,
     logo:  null,   // logo.png ist im ersten Durchlauf nicht sichtbar
-    logo2: { x:50, y:50, width:W(350), plate:false, in:{ at:3.75, blur:"in", scale:1.4, duration:2, ease:"power1.in" }, out:LOGO_OUT(0.15) }
+    logo2: { x:50, y:50, width:0, plate:false, in:{ at:3.75, blur:"in", scale:1.4, duration:2, ease:"power1.in" }, out:LOGO_OUT(0.15) }
   },
 
   /* ---------- ab 2. Durchlauf: Schleife (endlos) ---------- */
@@ -191,15 +177,36 @@ const CFG = {
     bg:    { in:{ at:0, blur:"bgIn", scale:1.4, duration:2.5, ease:"power2.out" }, out:BG_OUT },
     textPos:{ x:50, y:10 },
     textIn:{ at:0.5, blur:"in", scale:1.4, duration:1, ease:"power2.out", each:0.1, from:"start" }, textOut:TXT_OUT,
-    logo:  { x:8,  y:93, width:W(200), plate:false, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) },
-    logo2: { x:94, y:92, width:W(150), plate:false, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.15) },
-    syms:  { x:50, y:94, gap:W(10), back:W(30), stop:W(40), next:W(30),   // Breiten in vw
+    logo:  { x:8,  y:93, width:0, plate:false, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) },
+    logo2: { x:94, y:92, width:0, plate:false, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.15) },
+    syms:  { x:50, y:94, gap:0, back:0, stop:0, next:0,   // Breiten in vw
              in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) },
     impressum: true,   // Schriftzug unter logo2.png (blendet exakt wie logo2.png ein und aus)
-    impressumDx: 0.95, // waagerechter Versatz gegenüber der Mitte von logo2.png in vw (positiv = nach rechts)
+    impressumDx: 0,    // waagerechter Versatz gegenüber der Mitte von logo2.png in vw (positiv = nach rechts)
     worm:  { x:6, y:12, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) }
   }
 };
+
+/* Überträgt das passende Profil (Quer- oder Hochformat) in CFG und REL */
+let currentProfile = null;
+function applyProfile() {
+  const name = profileName(), P = PROFILES[name];
+  currentProfile = name;
+  CFG.fontVw = P.fontVw; CFG.smallVw = P.smallVw; CFG.wormVw = P.wormVw;
+  REL.creditGap = P.creditGap; REL.moveOut = P.moveOut;
+  REL.blur.in = P.blurIn; REL.blur.out = P.blurOut; REL.blur.bgIn = P.blurBgIn; REL.blur.bgOut = P.blurBgOut;
+  const I = CFG.intro, L = CFG.loop;
+  I.textPos.x = P.intro.text.x;  I.textPos.y = P.intro.text.y;
+  I.logo2.x = P.intro.logo2.x;   I.logo2.y = P.intro.logo2.y;  I.logo2.width = P.introLogo2Vw;
+  L.textPos.x = P.loop.text.x;   L.textPos.y = P.loop.text.y;
+  L.logo.x = P.loop.logo.x;      L.logo.y = P.loop.logo.y;     L.logo.width = P.logoVw;
+  L.logo2.x = P.loop.logo2.x;    L.logo2.y = P.loop.logo2.y;   L.logo2.width = P.logo2Vw;
+  L.syms.x = P.loop.syms.x;      L.syms.y = P.loop.syms.y;
+  L.syms.gap = P.gap; L.syms.back = P.back; L.syms.stop = P.stop; L.syms.next = P.next;
+  L.worm.x = P.loop.worm.x;      L.worm.y = P.loop.worm.y;
+  L.impressumDx = P.impressumDx;
+}
+applyProfile();
 
 /* ============================================================
    ABLAUF (muss normalerweise nicht verändert werden)
@@ -376,7 +383,11 @@ function navigate(delta) {
   ex.addLabel("out");
   addOut(ex, cur.cfg, cur.chars, true);
 }
-window.addEventListener("resize", () => { if (cur) placeImpressum(cur.cfg); });
+window.addEventListener("resize", () => {
+  if (!cur) return;
+  if (profileName() !== currentProfile) { applyProfile(); layout(cur.cfg); }   // Wechsel Hoch-/Querformat
+  else placeImpressum(cur.cfg);
+});
 $("btnVor").addEventListener("click", () => navigate(1));
 $("btnZurueck").addEventListener("click", () => navigate(-1));
 $("btnStopp").addEventListener("click", () => { if (controlsReady()) setPaused(!paused); });
@@ -437,85 +448,6 @@ function done() {
     last=ts;
     requestAnimationFrame(tick);
   })(performance.now());
-})();
-</script>
-<script>
-/* Einstell-Panel: Werte live ändern, unten kopieren und mir schicken */
-(function(){
-  const GR = [
-    ["Größen (vw = % der Fensterbreite)", [
-      ["Text-Schriftgröße",       CFG, "fontVw", 1, 10, 0.05, " vw"],
-      ["Logo (Schleife)",         CFG.loop.logo, "width", 2, 30, 0.1, " vw"],
-      ["Logo 2 (Schleife)",       CFG.loop.logo2, "width", 2, 30, 0.1, " vw"],
-      ["Logo 2 (Intro)",          CFG.intro.logo2, "width", 5, 40, 0.1, " vw"],
-      ["Wurmloch (Schild folgt)", CFG, "wormVw", 3, 25, 0.1, " vw"],
-      ["Symbol Zurück",           CFG.loop.syms, "back", 0.5, 8, 0.05, " vw"],
-      ["Symbol Stopp/Play",       CFG.loop.syms, "stop", 0.5, 8, 0.05, " vw"],
-      ["Symbol Vor",              CFG.loop.syms, "next", 0.5, 8, 0.05, " vw"],
-      ["Abstand Symbole",         CFG.loop.syms, "gap", 0, 5, 0.05, " vw"],
-      ["Schrift Nachweis/Impr.",  CFG, "smallVw", 0.4, 2.5, 0.02, " vw"]
-    ]],
-    ["Abstände", [
-      ["Nachweis unter Leiste",   REL, "creditGap", -3, 5, 0.05, " vh"],
-      ["Impressum Versatz X",     CFG.loop, "impressumDx", -5, 15, 0.05, " vw"]
-    ]],
-    ["Bewegung und Weichzeichner (wirkt ab nächstem Abspielen)", [
-      ["Ausblend-Versatz Y",      REL, "moveOut", -10, 10, 0.1, " vh"],
-      ["Blur Einblenden",         REL.blur, "in", 0, 5, 0.05, " vmin"],
-      ["Blur Ausblenden",         REL.blur, "out", 0, 5, 0.05, " vmin"],
-      ["Blur Hintergrund ein",    REL.blur, "bgIn", 0, 5, 0.05, " vmin"],
-      ["Blur Hintergrund aus",    REL.blur, "bgOut", 0, 5, 0.05, " vmin"]
-    ]],
-    ["Positionen Intro (% der Bühne)", [
-      ["Text X", CFG.intro.textPos, "x", 0, 100, 0.1, " %"], ["Text Y", CFG.intro.textPos, "y", 0, 100, 0.1, " %"],
-      ["Logo 2 X", CFG.intro.logo2, "x", 0, 100, 0.1, " %"], ["Logo 2 Y", CFG.intro.logo2, "y", 0, 100, 0.1, " %"]
-    ]],
-    ["Positionen Schleife (% der Bühne)", [
-      ["Text X", CFG.loop.textPos, "x", 0, 100, 0.1, " %"], ["Text Y", CFG.loop.textPos, "y", 0, 100, 0.1, " %"],
-      ["Logo X", CFG.loop.logo, "x", 0, 100, 0.1, " %"], ["Logo Y", CFG.loop.logo, "y", 0, 100, 0.1, " %"],
-      ["Logo 2 X", CFG.loop.logo2, "x", 0, 100, 0.1, " %"], ["Logo 2 Y", CFG.loop.logo2, "y", 0, 100, 0.1, " %"],
-      ["Symbole X", CFG.loop.syms, "x", 0, 100, 0.1, " %"], ["Symbole Y", CFG.loop.syms, "y", 0, 100, 0.1, " %"],
-      ["Wurmloch X", CFG.loop.worm, "x", 0, 100, 0.1, " %"], ["Wurmloch Y", CFG.loop.worm, "y", 0, 100, 0.1, " %"]
-    ]]
-  ];
-  const $r = id => document.getElementById(id), box = $r("rGroups");
-  function report() {
-    $r("rOut").value = GR.map(g => g[0] + "\n" + g[1].map(d => "  " + d[0] + ": " + (+d[1][d[2]]).toFixed(2) + d[6].trimEnd()).join("\n")).join("\n\n");
-  }
-  function fmt(v){ return (+v).toFixed(2).replace(/\.?0+$/, ""); }
-  GR.forEach((g, gi) => {
-    const det = document.createElement("details"); if (gi < 2) det.open = true;
-    const sum = document.createElement("summary"); sum.textContent = g[0]; det.append(sum);
-    g[1].forEach(d => {
-      const row = document.createElement("div"); row.className = "zeile";
-      const lab = document.createElement("label"); lab.textContent = d[0];
-      const inp = document.createElement("input"); inp.type = "range"; inp.min = d[3]; inp.max = d[4]; inp.step = d[5]; inp.value = d[1][d[2]];
-      const out = document.createElement("output"); out.textContent = fmt(d[1][d[2]]) + d[6];
-      inp.addEventListener("input", () => { d[1][d[2]] = +inp.value; out.textContent = fmt(inp.value) + d[6]; if (cur) layout(cur.cfg); report(); });
-      row.append(lab, inp, out); det.append(row);
-    });
-    box.append(det);
-  });
-  report();
-
-  function restartAt(r) {
-    if (nextCall) nextCall.kill();
-    if (active) active.kill();
-    stopped = false; navigating = false; setPaused(false);
-    $r("portal").style.pointerEvents = ""; $r("wormBox").style.zIndex = "";
-    run = r; playRun();
-  }
-  $r("rIntro").addEventListener("click", () => restartAt(0));
-  $r("rLoop").addEventListener("click", () => restartAt(1));
-  $r("rTog").addEventListener("click", () => $r("regler").classList.toggle("zu"));
-  $r("rSeite").addEventListener("click", () => $r("regler").classList.toggle("links"));
-  $r("rCopy").addEventListener("click", function(){
-    const t = $r("rOut"); t.select(); const b = this;
-    try { navigator.clipboard.writeText(t.value); } catch(e) { document.execCommand("copy"); }
-    b.textContent = "Kopiert ✓"; setTimeout(() => b.textContent = "Werte kopieren", 1200);
-  });
-  function info() { $r("rInfo").textContent = "Startwerte = bisherige Pixelwerte, umgerechnet für dieses Fenster (" + innerWidth + " × " + innerHeight + " px)."; }
-  info(); window.addEventListener("resize", info);
 })();
 </script>
 </body>
