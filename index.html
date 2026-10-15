@@ -219,8 +219,8 @@ const INFO_OUT = { blur:"out", scale:1,   y:"out", duration:0.5, ease:"power2.in
 
 /* Navigation: Anzahl Wurmlöcher im Ring, Stärke der Unschärfe dahinter (vmin), Einblend-Effekt wie bei den Logos */
 const NAV_COUNT = 6, NAV_BLUR_VMIN = 4;
-/* Schilder der Navigations-Wurmlöcher: Dateiname schild-<name>.png und Beschriftung, im Uhrzeigersinn ab oben */
-const NAV_SIGNS = [["news","News"], ["schule","Schule"], ["ganztag","Ganztag"], ["termine","Termine"], ["kontakt","Kontakt"], ["support","Support"]];
+/* Schilder der Navigations-Wurmlöcher: Dateiname schild-<name>.png, Beschriftung und Größenfaktor (1 = Standard), im Uhrzeigersinn ab oben */
+const NAV_SIGNS = [["news","News",1], ["schule","Schule",1.1], ["ganztag","Ganztag",1.1], ["termine","Termine",1.1], ["kontakt","Kontakt",1.1], ["support","Support",1.1]];
 const NAV_IN = { blur:"in", scale:1.4, y:0, duration:1.25, ease:"power2.out", each:0.1, from:"start" };
 
 const CFG = {
@@ -582,8 +582,9 @@ function diveFromNav(i, w, portal) {
     copy.removeAttribute("id"); copy.classList.add("nwInner");
     copy.querySelectorAll("[id]").forEach(e => e.removeAttribute("id"));
     const portal = copy.querySelector(".portal");
-    const [signFile, signName] = NAV_SIGNS[i];
+    const [signFile, signName, signScale] = NAV_SIGNS[i];
     item.style.setProperty("--sign-img", `url("schild-${signFile}.png")`);
+    item.style.setProperty("--sign", (0.7 * signScale).toFixed(3));   // Breite des Schilds relativ zum Wurmloch (Standard 0,7)
     copy.querySelector(".sign").setAttribute("aria-label", signName);
     portal.setAttribute("aria-label", signName + " – Wurmloch betreten");
     portal.addEventListener("click", () => diveFromNav(i, copy, portal));
