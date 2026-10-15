@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prototyp Hochformat: Logo 2 und Impressum</title>
+<title>Intro-Karussell</title>
 <!--
   Lege diese Datei in einen Ordner zusammen mit:
   001.jpg (Intro), 002.jpg, 003.jpg, 004.jpg (Karussell), logo.png, logo2.png,
@@ -95,34 +95,6 @@
   .sbtn:focus-visible { outline:2px solid #8fa4ff; outline-offset:4px; border-radius:6px; }
 
   #fehlt { position:fixed; left:8px; bottom:8px; z-index:9; font:12px system-ui, sans-serif; background:#fff3cd; color:#664d03; padding:6px 8px; border-radius:6px; display:none; }
-
-  /* ---------- Einstell-Panel (nur Prototyp), nahezu vollständig zuklappbar ---------- */
-  #regler, #rGear { position:fixed; z-index:50; }
-  body.p-or #regler, body.p-or #rGear { top:8px; right:8px; }
-  body.p-ur #regler, body.p-ur #rGear { bottom:8px; right:8px; }
-  body.p-ol #regler, body.p-ol #rGear { top:8px; left:8px; }
-  body.p-ul #regler, body.p-ul #rGear { bottom:8px; left:8px; }
-  #regler { width:min(250px, 76vw); max-height:60vh; overflow-y:auto; background:rgba(20,20,26,.93); color:#fff;
-    font:12px/1.4 system-ui, sans-serif; border-radius:10px; padding:8px 10px; box-shadow:0 6px 24px rgba(0,0,0,.45); transition:opacity .2s; }
-  #regler.zieht { opacity:.12; }   /* beim Ziehen fast durchsichtig, damit man das Design sieht */
-  #rGear { display:none; width:34px; height:34px; padding:0; border:0; border-radius:50%; background:rgba(79,70,229,.85); color:#fff; font:18px/34px system-ui, sans-serif;
-    text-align:center; cursor:pointer; opacity:.75; box-shadow:0 2px 10px rgba(0,0,0,.4); }
-  body.zu #rGear { display:block; }
-  body.zu #regler { display:none; }
-  #regler .kopf { display:flex; justify-content:space-between; align-items:center; gap:6px; font-weight:600; }
-  #regler button { background:#4f46e5; color:#fff; border:0; border-radius:6px; padding:4px 8px; cursor:pointer; font:inherit; }
-  #regler button.sek { background:#3a3a46; }
-  #regler details { margin-top:6px; border-top:1px solid #34343d; padding-top:5px; }
-  #regler summary { cursor:pointer; font-weight:600; color:#cfd0ff; }
-  #regler .zeile { display:grid; grid-template-columns:78px 1fr 52px; align-items:center; gap:6px; margin:3px 0; }
-  #regler .zeile label { color:#dde; }
-  #regler output { text-align:right; color:#ccd; font-variant-numeric:tabular-nums; }
-  #regler input[type=range] { width:100%; accent-color:#8b85ff; touch-action:pan-y; }
-  #regler input[type=range]:disabled { opacity:.35; }
-  #regler .info { color:#aab; margin:5px 0; }
-  #regler .warn { color:#ffd479; margin:5px 0; display:none; }
-  #regler .btnrow { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0; }
-  #regler textarea { width:100%; height:130px; background:#111; color:#dde; border:1px solid #444; border-radius:6px; font:11px/1.4 ui-monospace, monospace; resize:vertical; }
 </style>
 </head>
 <body>
@@ -163,18 +135,6 @@
   <div id="navOverlay"></div>
   <div id="navRing" role="navigation" aria-label="Navigation"></div>
 </div>
-<div id="regler">
-  <div class="kopf"><span>Logo 2 und Impressum</span><span><button class="sek" id="rEcke" type="button" title="Panel in die nächste Ecke">Ecke</button> <button id="rTog" type="button" title="fast ganz zuklappen">–</button></span></div>
-  <div class="info" id="rInfo"></div>
-  <div class="warn" id="rWarn">Nur fürs Hochformat gedacht: bitte das Fenster höher als breit ziehen.</div>
-  <div id="rGroups"></div>
-  <div class="btnrow"><button id="rIntro" type="button">Intro neu</button><button id="rLoop" type="button">Schleife neu</button><button class="sek" id="rReset" type="button">Startwerte</button></div>
-  <details><summary>Werte zum Übernehmen</summary>
-    <textarea id="rOut" readonly></textarea>
-    <div class="btnrow"><button id="rCopy" type="button">Werte kopieren</button></div>
-  </details>
-</div>
-<button id="rGear" type="button" title="Panel aufklappen">⚙</button>
 <div id="fehlt"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
@@ -214,20 +174,20 @@ const ANCHORS = {
   ],
   port: [
     { ar:394/734, v:{    // schmales Hochformat, 394 x 734 px
-      fontVw:8.10, moreVw:4.20, infoVw:3.80, infoW:88, navVw:4.45, navX:80, navY:5.2, navR:30, logoVw:40.00, logo2Vw:22.00, introLogo2Vw:40.00, wormVw:20.00,
+      fontVw:8.10, moreVw:4.20, infoVw:3.80, infoW:88, navVw:4.45, navX:80, navY:5.2, navR:30, logoVw:40.00, logo2Vw:25.00, introLogo2Vw:40.00, wormVw:20.00,
       back:7.00, stop:9.00, next:7.00, gap:2.00, smallVw:2.58,
-      creditGap:-0.18, impressumDx:-4.20,
+      creditGap:-0.18, impressumDx:-5.40,
       moveOut:-2.72, blurIn:3.81, blurOut:3.05, blurBgIn:3.81, blurBgOut:5.08,
       intro:{ text:{x:50, y:29.9}, logo2:{x:50, y:40.2} },
       loop: { text:{x:50, y:18.9}, logo:{x:23.2, y:5}, logo2:{x:86.5, y:94.8}, syms:{x:23, y:95.1} }
     }},
     { ar:810/948, v:{    // iPad hoch, 810 x 948 px
-      fontVw:7.00, moreVw:3.00, infoVw:2.40, infoW:84, navVw:3.20, navX:88.6, navY:3.5, navR:30, logoVw:25.00, logo2Vw:16.00, introLogo2Vw:40.00, wormVw:14.00,
+      fontVw:7.00, moreVw:3.00, infoVw:2.40, infoW:84, navVw:3.20, navX:88.6, navY:3.5, navR:30, logoVw:25.00, logo2Vw:20.00, introLogo2Vw:40.00, wormVw:14.00,
       back:3.70, stop:4.94, next:3.70, gap:1.23, smallVw:1.48,
-      creditGap:0, impressumDx:-3.75,
+      creditGap:0, impressumDx:-5.70,
       moveOut:-2.11, blurIn:1.85, blurOut:1.48, blurBgIn:1.85, blurBgOut:2.47,
       intro:{ text:{x:50, y:30}, logo2:{x:50, y:44.8} },
-      loop: { text:{x:50, y:22.9}, logo:{x:13, y:3.5}, logo2:{x:89.6, y:93.8}, syms:{x:14, y:94.8} }
+      loop: { text:{x:50, y:22.9}, logo:{x:13, y:3.5}, logo2:{x:88.1, y:93.8}, syms:{x:14, y:94.8} }
     }}
   ]
 };
@@ -323,7 +283,6 @@ function applyProfile() {
   L.syms.x = P.loop.syms.x;      L.syms.y = P.loop.syms.y;
   L.syms.gap = P.gap; L.syms.back = P.back; L.syms.stop = P.stop; L.syms.next = P.next;
   L.impressumDx = P.impressumDx;
-  if (typeof applyOverrides === "function") applyOverrides();   // Prototyp: Reglerwerte behalten
 }
 applyProfile();
 
@@ -635,7 +594,6 @@ function diveFromNav(i, w, portal) {
 window.addEventListener("resize", () => {
   if (!cur) return;
   applyProfile(); layout(cur.cfg);   // Werte stetig an das neue Seitenverhältnis anpassen
-  if (typeof syncPanel === "function") syncPanel();
 });
 $("btnVor").addEventListener("click", () => navigate(1));
 $("btnZurueck").addEventListener("click", () => navigate(-1));
@@ -700,96 +658,6 @@ function done() {
     last=ts;
     requestAnimationFrame(tick);
   })(performance.now());
-})();
-</script>
-<script>
-/* Einstell-Panel (nur Hochformat): Werte live ändern, unten kopieren und mir schicken.
-   Die Reglerwerte gelten absolut für die aktuelle Fenstergröße und bleiben beim Verändern des Fensters erhalten.
-   Das Panel lässt sich mit "–" bis auf einen kleinen Knopf zuklappen; "Ecke" verschiebt es in die nächste Ecke. */
-(function(){
-  const l2 = () => CFG.loop.logo2;
-  const GR = [
-    ["Logo 2 (Schleife, rechte untere Ecke)", [
-      ["Position X",  () => l2().x,     v => l2().x = v,     0, 100, 0.1, " %",  "l2x"],
-      ["Position Y",  () => l2().y,     v => l2().y = v,     0, 100, 0.1, " %",  "l2y"],
-      ["Breite",      () => l2().width, v => l2().width = v, 5, 50,  0.1, " vw", "l2w"]
-    ]],
-    ["Impressum (unter Logo 2)", [
-      ["Versatz X",   () => CFG.loop.impressumDx, v => CFG.loop.impressumDx = v, -20, 20, 0.05, " vw", "impDx"]
-    ]]
-  ];
-  const $r = id => document.getElementById(id), box = $r("rGroups");
-  const OVR = {}, rows = [];
-  const fmt = v => (+v).toFixed(2).replace(/\.?0+$/, "");
-
-  window.applyOverrides = function () {
-    if (profileName() !== "port") return;
-    rows.forEach(r => { if (r.key in OVR) r.set(OVR[r.key]); });
-  };
-  function report() {
-    const head = (profileName() === "port" ? "Hochformat" : "(Querformat, nicht gedacht)") + " bei " + innerWidth + " x " + innerHeight + " px\n";
-    $r("rOut").value = head + "\n" + GR.map(g => g[0] + "\n" + g[1].map(d => "  " + d[0] + ": " + (+d[1]()).toFixed(2) + d[6].trimEnd()).join("\n")).join("\n\n");
-  }
-  window.syncPanel = function () {
-    const port = profileName() === "port";
-    rows.forEach(r => { r.inp.disabled = !port; r.inp.value = r.get(); r.out.textContent = fmt(r.get()) + r.unit; });
-    $r("rWarn").style.display = port ? "none" : "block";
-    $r("rInfo").textContent = innerWidth + " × " + innerHeight + " px. Schrift und Höhe des Impressums folgen dem Bildnachweis.";
-    report();
-  };
-
-  GR.forEach(g => {
-    const det = document.createElement("details"); det.open = true;
-    const sum = document.createElement("summary"); sum.textContent = g[0]; det.append(sum);
-    g[1].forEach(d => {
-      const row = document.createElement("div"); row.className = "zeile";
-      const lab = document.createElement("label"); lab.textContent = d[0];
-      const inp = document.createElement("input"); inp.type = "range"; inp.min = d[3]; inp.max = d[4]; inp.step = d[5];
-      const out = document.createElement("output");
-      const r = { key:d[7], get:d[1], set:d[2], unit:d[6], inp, out };
-      rows.push(r);
-      inp.addEventListener("input", () => {
-        OVR[r.key] = +inp.value; r.set(OVR[r.key]); out.textContent = fmt(inp.value) + r.unit;
-        if (cur) layout(cur.cfg);
-        report();
-      });
-      row.append(lab, inp, out); det.append(row);
-    });
-    box.append(det);
-  });
-  syncPanel();
-
-  /* Panel beim Ziehen fast durchsichtig machen */
-  box.addEventListener("pointerdown", e => { if (e.target.type === "range") $r("regler").classList.add("zieht"); });
-  ["pointerup", "pointercancel"].forEach(ev => window.addEventListener(ev, () => $r("regler").classList.remove("zieht")));
-
-  /* Ecke wählen und zuklappen */
-  const ecken = ["p-or", "p-ur", "p-ul", "p-ol"]; let ei = 0;   // Start: rechts oben, weit weg von Logo 2
-  document.body.classList.add(ecken[ei]);
-  $r("rEcke").addEventListener("click", () => { document.body.classList.remove(ecken[ei]); ei = (ei + 1) % ecken.length; document.body.classList.add(ecken[ei]); });
-  $r("rTog").addEventListener("click", () => document.body.classList.add("zu"));
-  $r("rGear").addEventListener("click", () => document.body.classList.remove("zu"));
-
-  /* Zoom in die Wurmlöcher ist im Prototyp abgeschaltet */
-  window.diveFromNav = function () {};
-
-  function restartAt(n) {
-    if (nextCall) nextCall.kill();
-    if (active) active.kill();
-    stopped = false; navigating = false; setPaused(false);
-    run = n; playRun();
-  }
-  $r("rIntro").addEventListener("click", () => restartAt(0));
-  $r("rLoop").addEventListener("click", () => restartAt(1));
-  $r("rReset").addEventListener("click", () => {
-    Object.keys(OVR).forEach(k => delete OVR[k]);
-    applyProfile(); if (cur) layout(cur.cfg); syncPanel();
-  });
-  $r("rCopy").addEventListener("click", function () {
-    const t = $r("rOut"); t.select(); const b = this;
-    try { navigator.clipboard.writeText(t.value); } catch (e) { document.execCommand("copy"); }
-    b.textContent = "Kopiert ✓"; setTimeout(() => b.textContent = "Werte kopieren", 1200);
-  });
 })();
 </script>
 </body>
