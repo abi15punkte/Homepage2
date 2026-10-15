@@ -7,7 +7,7 @@
 <!--
   Lege diese Datei in einen Ordner zusammen mit:
   001.jpg (Intro), 002.jpg, 003.jpg, 004.jpg (Karussell), logo.png, logo2.png,
-  wurmloch-news.png, schild-news.png (Wurmloch),
+  wurmloch-news.png, schild-news.png, schild-schule.png, schild-ganztag.png, schild-termine.png, schild-kontakt.png, schild-support.png (Wurmlöcher der Navigation),
   Zurueck.png, Stopp.png, play.png, Vor.png (Symbole)
 -->
 <style>
@@ -219,6 +219,8 @@ const INFO_OUT = { blur:"out", scale:1,   y:"out", duration:0.5, ease:"power2.in
 
 /* Navigation: Anzahl Wurmlöcher im Ring, Stärke der Unschärfe dahinter (vmin), Einblend-Effekt wie bei den Logos */
 const NAV_COUNT = 6, NAV_BLUR_VMIN = 4;
+/* Schilder der Navigations-Wurmlöcher: Dateiname schild-<name>.png und Beschriftung, im Uhrzeigersinn ab oben */
+const NAV_SIGNS = [["news","News"], ["schule","Schule"], ["ganztag","Ganztag"], ["termine","Termine"], ["kontakt","Kontakt"], ["support","Support"]];
 const NAV_IN = { blur:"in", scale:1.4, y:0, duration:1.25, ease:"power2.out", each:0.1, from:"start" };
 
 const CFG = {
@@ -580,6 +582,10 @@ function diveFromNav(i, w, portal) {
     copy.removeAttribute("id"); copy.classList.add("nwInner");
     copy.querySelectorAll("[id]").forEach(e => e.removeAttribute("id"));
     const portal = copy.querySelector(".portal");
+    const [signFile, signName] = NAV_SIGNS[i];
+    item.style.setProperty("--sign-img", `url("schild-${signFile}.png")`);
+    copy.querySelector(".sign").setAttribute("aria-label", signName);
+    portal.setAttribute("aria-label", signName + " – Wurmloch betreten");
     portal.addEventListener("click", () => diveFromNav(i, copy, portal));
     item.append(copy); ring.append(item);
   }
@@ -608,7 +614,7 @@ impressum.addEventListener("click", e => {
 });
 
 /* Bilder vorladen und fehlende Dateien anzeigen */
-const files = ["Zurueck.png", "Stopp.png", "play.png", "Vor.png", "logo.png", "logo2.png", "wurmloch-news.png", "schild-news.png", CFG.intro.bgSrc, ...CFG.loop.slides.map(x => x.bgSrc)];
+const files = ["Zurueck.png", "Stopp.png", "play.png", "Vor.png", "logo.png", "logo2.png", "wurmloch-news.png", ...NAV_SIGNS.map(x => "schild-" + x[0] + ".png"), CFG.intro.bgSrc, ...CFG.loop.slides.map(x => x.bgSrc)];
 const missing = [];
 let pending = files.length;
 files.forEach(f => {
