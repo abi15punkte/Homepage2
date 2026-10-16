@@ -817,14 +817,23 @@ $("btnZurueck").addEventListener("click", () => navigate(-1));
 $("btnStopp").addEventListener("click", () => { if (controlsReady()) setPaused(!paused); });
 
 /* Hochformat-Symbole: Ziele hier eintragen, z. B. "tel:+49...", "mailto:...", "impressum.html". Leer = Symbol tut noch nichts. */
-const ICON_LINKS = { telefon:"", email:"", adresse:"", iserv:"", foerderverein:"", impressum:"" };
+const ICON_LINKS = {
+  telefon:"tel:+49203332667",
+  email:"mailto:GGS.AstridLindgrenSchule@stadt-duisburg.de",
+  adresse:"https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent("Aakerfährstraße 80, 47058 Duisburg"),
+  iserv:"https://du-als-monti-ggs.de",
+  foerderverein:"", impressum:""
+};
+iconRow.querySelectorAll("[data-k]").forEach(a => { if (ICON_LINKS[a.dataset.k]) a.href = ICON_LINKS[a.dataset.k]; });
 iconRow.addEventListener("click", e => {
   const a = e.target.closest && e.target.closest("[data-k]");
   if (!a) return;
   e.preventDefault();
   if (stopped || gsap.getProperty(iconRow, "opacity") < 0.3) return;
   const url = ICON_LINKS[a.dataset.k];
-  if (url) location.href = url;
+  if (!url) return;
+  if (/^https?:/.test(url)) window.open(url, "_blank", "noopener");   // Maps und IServ in neuem Tab, die Seite läuft weiter
+  else location.href = url;   // tel: / mailto:
 });
 
 /* Impressum: Ziel später hier eintragen, z. B. "impressum.html" */
