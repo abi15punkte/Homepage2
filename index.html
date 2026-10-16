@@ -96,11 +96,12 @@
 
   /* ---------- Nur Hochformat: Symbolgruppe rechts neben den Steuersymbolen, Bildnachweis zentriert unten ---------- */
   #iconBox { z-index:6; }
-  #iconRow { display:grid; grid-template-columns:repeat(3, calc(var(--icell, 19) * 1vw)); row-gap:calc(var(--igap, 1) * 1vw); justify-items:center; align-items:start; }
-  .ibtn { display:flex; flex-direction:column; align-items:center; gap:.3em; width:100%; padding:0; border:0; background:none; color:#fff; text-decoration:none; cursor:pointer;
+  #iconRow { position:relative; display:flex; align-items:center; gap:calc(var(--igap, 1) * 1vw); }
+  #iconRow::before { content:""; position:absolute; left:calc(var(--igrp, 4) * -.5vw - .5px); top:8%; bottom:8%; width:1px; background:rgba(255,255,255,.6); box-shadow:0 0 .3em rgba(0,0,0,.6); }   /* Trennstrich zwischen Steuersymbolen und den sechs Symbolen */
+  .ibtn { display:flex; flex-direction:column; align-items:center; gap:.3em; width:auto; padding:0; border:0; background:none; color:#fff; text-decoration:none; cursor:pointer;
     font:400 var(--small, 0.8vw)/1.2 system-ui, sans-serif; text-shadow:0 .08em .25em rgba(0,0,0,.85); -webkit-tap-highlight-color:transparent; transition:transform .15s ease; }
   .ibtn img { display:block; width:calc(var(--ivw, 9) * 1vw); height:auto; filter:drop-shadow(0 .1em .3em rgba(0,0,0,.55)); user-select:none; -webkit-user-drag:none; }
-  .ibtn span { text-align:center; }
+  .ibtn span { display:none; }   /* neun Symbole in einer Zeile: Beschriftung entfällt sichtbar (aria-label bleibt) */
   .ibtn:hover { transform:scale(1.08); }
   .ibtn:active { transform:scale(.94); }
   .ibtn:focus-visible { outline:2px solid #8fa4ff; outline-offset:3px; border-radius:6px; }
@@ -217,7 +218,7 @@ const ANCHORS = {
       fontVw:8.10, moreVw:4.20, infoVw:3.80, infoW:88, navVw:4.45, termW:90, navX:80, navY:5.2, navR:30, logoVw:40.00, logo2Vw:25.00, introLogo2Vw:40.00, wormVw:20.00,
       back:7.00, stop:9.00, next:7.00, gap:2.00, smallVw:2.58,
       creditGap:-0.18, impressumDx:-5.40,
-      iconVw:9.5, iconCell:19, iconGap:1.0, iconX:65, iconY:88.8, creditY:98.6,   // Symbolgruppe (Breite Symbol, Zellbreite, Zeilenabstand in vw; Mitte x/y in %), Bildnachweis y in %
+      iconSz:8.6, iconIn:1.0, iconGrp:5.0, iconY:93, creditY:98.6,   // alle 9 Symbole in einer Zeile: Symbolbreite, Abstand innerhalb einer Gruppe, Abstand zwischen den Gruppen (vw); Zeile y in %; Bildnachweis y in %
       moveOut:-2.72, blurIn:3.81, blurOut:3.05, blurBgIn:3.81, blurBgOut:5.08,
       intro:{ text:{x:50, y:29.9}, logo2:{x:50, y:40.2} },
       loop: { text:{x:50, y:13.9}, logo:{x:23.2, y:5}, logo2:{x:15.5, y:5}, syms:{x:19.5, y:88.8} }
@@ -226,7 +227,7 @@ const ANCHORS = {
       fontVw:7.00, moreVw:3.00, infoVw:2.40, infoW:84, navVw:3.20, termW:60, navX:88.6, navY:3.5, navR:30, logoVw:25.00, logo2Vw:20.00, introLogo2Vw:40.00, wormVw:14.00,
       back:3.70, stop:4.94, next:3.70, gap:1.23, smallVw:1.48,
       creditGap:0, impressumDx:-5.70,
-      iconVw:5.2, iconCell:11, iconGap:0.8, iconX:41.5, iconY:89.3, creditY:98.6,
+      iconSz:6.2, iconIn:1.2, iconGrp:4.0, iconY:93, creditY:98.6,
       moveOut:-2.11, blurIn:1.85, blurOut:1.48, blurBgIn:1.85, blurBgOut:2.47,
       intro:{ text:{x:50, y:30}, logo2:{x:50, y:44.8} },
       loop: { text:{x:50, y:17.9}, logo:{x:13, y:3.5}, logo2:{x:13, y:3.5}, syms:{x:14, y:89.3} }
@@ -348,7 +349,13 @@ function applyProfile() {
   L.syms.x = P.loop.syms.x;      L.syms.y = P.loop.syms.y;
   L.syms.gap = P.gap; L.syms.back = P.back; L.syms.stop = P.stop; L.syms.next = P.next;
   L.impressumDx = P.impressumDx;
-  if (P.iconVw != null) { CFG.icon = { vw:P.iconVw, cell:P.iconCell, gap:P.iconGap, x:P.iconX, y:P.iconY }; CFG.creditY = P.creditY; }   // nur Hochformat
+  if (P.iconSz != null) {   // nur Hochformat: 3 Steuersymbole | 6 Symbole, alle gleich groß in einer Zeile, zentriert
+    const sz = P.iconSz, g = P.iconIn, G = P.iconGrp;
+    const W = 9 * sz + 7 * g + G, ctrlW = 3 * sz + 2 * g, icoW = 6 * sz + 5 * g;
+    L.syms.back = L.syms.stop = L.syms.next = sz; L.syms.gap = g;
+    L.syms.x = 50 - W / 2 + ctrlW / 2; L.syms.y = P.iconY;
+    CFG.icon = { sz, gap:g, grp:G, x:50 + W / 2 - icoW / 2, y:P.iconY }; CFG.creditY = P.creditY;
+  }
 }
 applyProfile();
 
@@ -534,7 +541,7 @@ function placeImpressum(cfg) {
   $("impBox").style.left = `calc(${cfg.logo2.x}% + ${cfg.impressumDx || 0}vw)`;
 }
 
-/* Nur Hochformat: sechs Symbole (3 x 2) rechts neben den Steuersymbolen, Bildnachweis zentriert unten */
+/* Nur Hochformat: sechs Symbole in einer Zeile rechts neben den Steuersymbolen, Bildnachweis zentriert unten */
 function placeIcons(cfg, port) {
   const ib = $("iconBox"), cb = $("creditBox"), I = CFG.icon;
   const show = !!(port && cfg.syms && I);
@@ -542,7 +549,7 @@ function placeIcons(cfg, port) {
   $("credit").style.display = show ? "none" : "";   // Querformat: Bildnachweis wie bisher unter dem Stopp-Symbol
   if (!show) return;
   const r = document.documentElement.style;
-  r.setProperty("--ivw", I.vw); r.setProperty("--icell", I.cell); r.setProperty("--igap", I.gap);
+  r.setProperty("--ivw", I.sz); r.setProperty("--igap", I.gap); r.setProperty("--igrp", I.grp);
   ib.style.left = I.x + "%"; ib.style.top = I.y + "%";
   cb.style.left = "50%"; cb.style.top = CFG.creditY + "%";
 }
