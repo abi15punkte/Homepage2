@@ -141,6 +141,29 @@
   .evBody h3 { margin:0; font-size:1.08em; font-weight:600; line-height:1.2; }
   .evBody p { margin:.2em 0 0; font-size:.82em; opacity:.85; }
   .evCard.past .evDate, .evCard.past .evBody { opacity:.5; }
+
+  /* ---------- Prototyp-Regler für logo2.png (nur Hochformat) ---------- */
+  #lp { position:fixed; right:8px; bottom:calc(8px + env(safe-area-inset-bottom, 0px)); z-index:200; width:min(94vw, 340px);
+    font:13px/1.3 system-ui, sans-serif; color:#fff; -webkit-tap-highlight-color:transparent; }
+  #lp .lpCard { background:rgba(15,18,28,.88); border:1px solid rgba(255,255,255,.22); border-radius:12px; padding:10px 12px 12px; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+  #lp .lpHead { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+  #lp .lpHead b { font-weight:600; }
+  #lp .lpRow { display:grid; grid-template-columns:62px 1fr 76px; align-items:center; gap:8px; margin:7px 0; }
+  #lp .lpRow label { opacity:.9; }
+  #lp input[type=range] { width:100%; margin:0; accent-color:#8fa4ff; }
+  #lp input[type=number] { width:100%; box-sizing:border-box; padding:5px 6px; border-radius:6px; border:1px solid rgba(255,255,255,.3); background:rgba(255,255,255,.1); color:#fff; font:inherit; }
+  #lp .lpInfo { font-size:11.5px; opacity:.75; margin-top:6px; }
+  #lp .lpBtns { display:flex; gap:8px; margin-top:8px; }
+  #lp button { font:inherit; color:#fff; border:1px solid rgba(255,255,255,.3); background:rgba(255,255,255,.12); border-radius:8px; padding:6px 10px; cursor:pointer; }
+  #lp button:active { background:rgba(255,255,255,.25); }
+  #lp #lpToggle { width:30px; height:30px; padding:0; border-radius:50%; line-height:1; font-size:15px; flex:none; }
+  /* eingeklappt: nur ein kleiner, blasser Punkt bleibt übrig */
+  #lp.min { width:auto; }
+  #lp.min .lpCard { background:none; border:0; padding:0; backdrop-filter:none; -webkit-backdrop-filter:none; }
+  #lp.min .lpBody, #lp.min .lpHead b { display:none; }
+  #lp.min .lpHead { margin:0; }
+  #lp.min #lpToggle { width:26px; height:26px; opacity:.45; background:rgba(15,18,28,.6); }
+  #lp.min #lpToggle:hover { opacity:.9; }
 </style>
 </head>
 <body>
@@ -189,6 +212,18 @@
   <div id="terminBox" aria-live="polite"></div>
   <div id="navOverlay"></div>
   <div id="navRing" role="navigation" aria-label="Navigation"></div>
+</div>
+<div id="lp">
+  <div class="lpCard">
+    <div class="lpHead"><b>Logo 2 · Hochformat</b><button id="lpToggle" type="button" aria-label="Regler ein-/ausklappen" aria-expanded="true">–</button></div>
+    <div class="lpBody">
+      <div class="lpRow"><label for="lpXn">X (%)</label><input id="lpX" type="range" min="0" max="100" step="0.1"><input id="lpXn" type="number" step="any"></div>
+      <div class="lpRow"><label for="lpYn">Y (%)</label><input id="lpY" type="range" min="0" max="100" step="0.1"><input id="lpYn" type="number" step="any"></div>
+      <div class="lpRow"><label for="lpWn">Breite (vw)</label><input id="lpW" type="range" min="5" max="80" step="0.1"><input id="lpWn" type="number" step="any"></div>
+      <div class="lpInfo" id="lpInfo"></div>
+      <div class="lpBtns"><button id="lpCopy" type="button">Werte kopieren</button><button id="lpReset" type="button">Zurücksetzen</button></div>
+    </div>
+  </div>
 </div>
 <div id="fehlt"></div>
 
@@ -378,6 +413,9 @@ Object.assign(RECHT_CFG, {
 });
 CFG.rechtliches = RECHT_CFG;
 
+/* Prototyp: eigene Werte für logo2.png im Hochformat (null = Werte aus ANCHORS) */
+const LOGO2 = { ovr:null };
+
 /* Überträgt das passende Profil (Quer- oder Hochformat) in CFG und REL */
 function applyProfile() {
   const P = profileValues();
@@ -390,6 +428,7 @@ function applyProfile() {
   L.textPos.x = P.loop.text.x;   L.textPos.y = P.loop.text.y;
   L.logo.x = P.loop.logo.x;      L.logo.y = P.loop.logo.y;     L.logo.width = P.logoVw;
   L.logo2.x = P.loop.logo2.x;    L.logo2.y = P.loop.logo2.y;   L.logo2.width = P.logo2Vw;
+  if (LOGO2.ovr && profileName() === "port") { L.logo2.x = LOGO2.ovr.x; L.logo2.y = LOGO2.ovr.y; L.logo2.width = LOGO2.ovr.w; }   // Prototyp-Regler
   L.syms.x = P.loop.syms.x;      L.syms.y = P.loop.syms.y;
   L.syms.gap = P.gap; L.syms.back = P.back; L.syms.stop = P.stop; L.syms.next = P.next;
   L.impressumDx = P.impressumDx;
@@ -980,6 +1019,65 @@ loadFiles(INTRO_FILES, "high", () => {
     last=ts;
     requestAnimationFrame(tick);
   })(performance.now());
+})();
+</script>
+<script>
+/* Prototyp-Regler: Position (Mitte von logo2.png in % der Bühne) und Breite (vw) im Hochformat, gilt für alle Karussells */
+(function () {
+  const el = id => document.getElementById(id);
+  const ids = { x:["lpX","lpXn"], y:["lpY","lpYn"], w:["lpW","lpWn"] };
+  const r2 = v => Math.round(v * 100) / 100;
+  const isPort = () => innerWidth < innerHeight;
+  const now = () => { const L = CFG.loop.logo2; return { x:L.x, y:L.y, w:L.width }; };
+
+  function show() {
+    const v = LOGO2.ovr || now();
+    for (const k in ids) {
+      el(ids[k][0]).value = r2(v[k]);
+      if (document.activeElement !== el(ids[k][1])) el(ids[k][1]).value = r2(v[k]);
+    }
+    const ar = (innerWidth / innerHeight).toFixed(3).replace(".", ",");
+    el("lpInfo").textContent = isPort()
+      ? "Fenster " + innerWidth + " × " + innerHeight + " px · Seitenverhältnis " + ar + (LOGO2.ovr ? " · eigene Werte" : " · Werte aus dem Profil")
+      : "Querformat: Die Regler wirken nur im Hochformat. Bitte hochkant drehen.";
+  }
+  function redraw() { applyProfile(); if (cur) layout(cur.cfg); }
+
+  function set(k, val) {
+    if (!isFinite(val) || !isPort()) return;   // nur im Hochformat
+    if (!LOGO2.ovr) LOGO2.ovr = now();
+    LOGO2.ovr[k] = val;
+    /* Seite vollständig einblenden und anhalten, damit man das Logo beim Verstellen sieht */
+    if (run > 0 && !navigating && !navOpen) {
+      if (tl && active === tl && tl.time() < tl.labels.hold) tl.seek("hold");
+      if (!paused) setPaused(true);
+    }
+    redraw(); show();
+  }
+  for (const k in ids) {
+    el(ids[k][0]).addEventListener("input", e => set(k, parseFloat(e.target.value)));
+    el(ids[k][1]).addEventListener("input", e => { if (e.target.value !== "") { set(k, parseFloat(e.target.value)); el(ids[k][0]).value = e.target.value; } });
+  }
+
+  el("lpReset").addEventListener("click", () => { LOGO2.ovr = null; redraw(); show(); });
+
+  el("lpCopy").addEventListener("click", () => {
+    const v = LOGO2.ovr || now();
+    const txt = "logo2: {x:" + r2(v.x) + ", y:" + r2(v.y) + "}, logo2Vw: " + r2(v.w);
+    const done = () => { el("lpCopy").textContent = "Kopiert ✓"; setTimeout(() => el("lpCopy").textContent = "Werte kopieren", 1400); };
+    const fallback = () => { const t = document.createElement("textarea"); t.value = txt; document.body.append(t); t.select(); try { document.execCommand("copy"); done(); } catch (e) { el("lpInfo").textContent = txt; } t.remove(); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
+  });
+
+  /* Menü fast komplett ausblenden: nur ein kleiner, blasser Punkt bleibt */
+  el("lpToggle").addEventListener("click", () => {
+    const min = el("lp").classList.toggle("min");
+    el("lpToggle").textContent = min ? "⚙" : "–";
+    el("lpToggle").setAttribute("aria-expanded", String(!min));
+  });
+
+  window.addEventListener("resize", () => setTimeout(show, 0));   // läuft nach dem Resize-Handler der Seite
+  show();
 })();
 </script>
 </body>
