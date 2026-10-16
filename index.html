@@ -147,6 +147,19 @@ const INTRO_BILD = INTRO_BILDER[new Date().getMonth()];
   .evBody h3 { margin:0; font-size:1.08em; font-weight:600; line-height:1.2; }
   .evBody p { margin:.2em 0 0; font-size:.82em; opacity:.85; }
   .evCard.past .evDate, .evCard.past .evBody { opacity:.5; }
+
+  /* ---------- PROTOTYP: Justier-Regler ---------- */
+  #adj { position:fixed; left:6px; bottom:6px; z-index:1000; width:min(300px, calc(100vw - 12px)); box-sizing:border-box; padding:8px 10px; border-radius:10px;
+    background:rgba(20,20,28,.82); color:#fff; font:12px/1.3 system-ui, sans-serif; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+  #adj h2 { margin:0; font:600 12px/1.3 system-ui, sans-serif; display:flex; justify-content:space-between; cursor:pointer; user-select:none; }
+  #adj .body { margin-top:6px; }
+  #adj .row { display:grid; grid-template-columns:92px 1fr 46px; gap:6px; align-items:center; margin:3px 0; }
+  #adj input[type=range] { width:100%; margin:0; }
+  #adj output { text-align:right; font-variant-numeric:tabular-nums; }
+  #adj .btns { display:flex; gap:6px; margin-top:6px; }
+  #adj button { flex:1; padding:5px 6px; border:0; border-radius:6px; background:#3a4a8a; color:#fff; font:inherit; cursor:pointer; }
+  #adj textarea { width:100%; height:64px; margin-top:6px; box-sizing:border-box; font:11px/1.3 ui-monospace, monospace; background:#0d0d14; color:#cfe; border:0; border-radius:6px; padding:4px; resize:none; }
+  #adj.min .body { display:none; }
 </style>
 </head>
 <body>
@@ -416,6 +429,7 @@ applyProfile();
    ABLAUF (muss normalerweise nicht verändert werden)
    ============================================================ */
 const $ = id => document.getElementById(id);
+const PROTO_HALT = true;   // PROTOTYP: Intro bleibt nach dem Einblenden stehen (kein Ausblenden, kein Weiterlaufen) – zum Justieren
 const bg = $("bg"), titel = $("titel"), logo = $("logo"), logo2 = $("logo2"), symGroup = $("symGroup"), impressum = $("impressum"), iconRow = $("iconRow"), creditB = $("creditB");
 const vars = p => ({
   opacity:0, filter:`blur(${REL.blur[p.blur] * Math.min(innerWidth, innerHeight) / 100}px)`, scale:p.scale,
@@ -643,6 +657,7 @@ function buildTimeline(cfg, chars) {
   if (cfg.syms)  tl.from([symGroup, iconRow, creditB], vars(cfg.syms.in), cfg.syms.in.at);
   if (cfg.logo2 && cfg.impressum) tl.from(impressum, vars(cfg.logo2.in), cfg.logo2.in.at);
   tl.addLabel("hold");
+  if (PROTO_HALT && run === 0) return tl;   // PROTOTYP: kein hold, kein out
   if (cfg.termin) tl.call(() => { if (!termineAuto) setPaused(true); });   // Termine: Seite bleibt stehen, bis Play gedrückt wird
   tl.to({}, { duration:cfg.hold });
   tl.addLabel("out");
@@ -685,6 +700,7 @@ function playRun() {
   document.querySelectorAll(".stage > .abs").forEach(e => e.style.visibility = "visible");
   tl.eventCallback("onComplete", () => {
     if (stopped) return;
+    if (PROTO_HALT && run === 0) return;   // PROTOTYP: Intro bleibt stehen
     const go = () => { run++; nextCall = gsap.delayedCall(cfg.pauseAfter, playRun); };
     if (run === 0 && !loopReady) afterLoopReady = go; else go();   // Intro zu Ende, Stufe 2 noch nicht geladen: kurz warten
   });
@@ -1012,6 +1028,53 @@ loadFiles(INTRO_FILES, "high", () => {
     last=ts;
     requestAnimationFrame(tick);
   })(performance.now());
+})();
+</script>
+<div id="adj"><h2 id="adjHead"><span>Intro justieren (Prototyp)</span><span id="adjTog">–</span></h2><div class="body" id="adjBody"></div></div>
+<script>
+/* PROTOTYP: Regler für Größe und Position von Logo2 und Überschrift im Intro. Werte gelten für die aktuelle Fenstergröße; beim Ändern der Fenstergröße
+   werden Regler und Intro wieder auf die Werte der Stützstellen (ANCHORS) zurückgesetzt. */
+(function () {
+  const I = CFG.intro;
+  const F = [
+    { k:"Logo2 Breite (vw)", min:5,  max:90,  step:0.1,  get:() => I.logo2.width,  set:v => I.logo2.width = v },
+    { k:"Logo2 x (%)",       min:0,  max:100, step:0.1,  get:() => I.logo2.x,      set:v => I.logo2.x = v },
+    { k:"Logo2 y (%)",       min:0,  max:100, step:0.1,  get:() => I.logo2.y,      set:v => I.logo2.y = v },
+    { k:"Text x (%)",        min:0,  max:100, step:0.1,  get:() => I.textPos.x,    set:v => I.textPos.x = v },
+    { k:"Text y (%)",        min:0,  max:100, step:0.1,  get:() => I.textPos.y,    set:v => I.textPos.y = v },
+    { k:"Schrift (vw)",      min:2,  max:14,  step:0.05, get:() => CFG.fontVw,     set:v => CFG.fontVw = v }
+  ];
+  const body = document.getElementById("adjBody");
+  const rows = F.map(f => {
+    const row = document.createElement("div"); row.className = "row";
+    const lab = document.createElement("span"); lab.textContent = f.k;
+    const inp = document.createElement("input"); inp.type = "range"; inp.min = f.min; inp.max = f.max; inp.step = f.step;
+    const out = document.createElement("output");
+    row.append(lab, inp, out); body.append(row);
+    inp.addEventListener("input", () => { f.set(parseFloat(inp.value)); apply(); });
+    return { f, inp, out };
+  });
+  const btns = document.createElement("div"); btns.className = "btns";
+  const bReplay = document.createElement("button"); bReplay.textContent = "Intro neu abspielen";
+  const bCopy = document.createElement("button"); bCopy.textContent = "Werte kopieren";
+  btns.append(bReplay, bCopy); body.append(btns);
+  const ta = document.createElement("textarea"); ta.readOnly = true; body.append(ta);
+
+  const r2 = (v, d) => (+v).toFixed(d);
+  function show() {
+    rows.forEach(r => { const v = r.f.get(); r.inp.value = v; r.out.textContent = r2(v, r.f.step < 0.1 ? 2 : 1); });
+    ta.value = "/* " + innerWidth + " x " + innerHeight + " px, Seitenverhältnis " + r2(innerWidth / innerHeight, 3) + " */\n" +
+      "fontVw:" + r2(CFG.fontVw, 2) + ", introLogo2Vw:" + r2(I.logo2.width, 2) + ",\n" +
+      "intro:{ text:{x:" + r2(I.textPos.x, 1) + ", y:" + r2(I.textPos.y, 1) + "}, logo2:{x:" + r2(I.logo2.x, 1) + ", y:" + r2(I.logo2.y, 1) + "} }";
+  }
+  function apply() { if (cur && cur.cfg === I) layout(I); show(); }
+  bReplay.addEventListener("click", () => { run = 0; playRun(); });
+  bCopy.addEventListener("click", () => { ta.select(); try { navigator.clipboard.writeText(ta.value); } catch (e) { document.execCommand("copy"); } });
+  document.getElementById("adjHead").addEventListener("click", () => {
+    const a = document.getElementById("adj"); a.classList.toggle("min"); document.getElementById("adjTog").textContent = a.classList.contains("min") ? "+" : "–";
+  });
+  window.addEventListener("resize", () => setTimeout(show, 0));   // läuft nach dem Resize-Handler der Seite
+  show();
 })();
 </script>
 </body>
