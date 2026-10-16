@@ -8,7 +8,7 @@
   Lege diese Datei in einen Ordner zusammen mit:
   Januar.png bis Dezember.png, Juni als Juni.jpg (Intro und Termine), 002.jpg, 003.jpg, 004.jpg (Karussell), logo.png, logo2.png,
   wurmloch-news.png, schild-news.png, schild-schule.png, schild-ganztag.png, schild-termine.png, schild-kontakt.png, schild-support.png (Wurmlöcher der Navigation),
-  Zurueck.png, Stopp.png, play.png, Vor.png (Symbole)
+  Zurueck.png, Stopp.png, play.png, Vor.png (Symbole), menu-icon.svg (Menü-Symbol der Navigation)
 -->
 <style>
   html, body { margin:0; height:100%; background:#111; overflow:hidden; }
@@ -30,6 +30,7 @@
   .more svg { display:block; width:1em; height:1em; overflow:visible; }
   .more:hover:not([aria-expanded="true"]) .chev { transform:translateY(.15em); }
   .more[aria-expanded="true"] .chev { transform:rotate(180deg); }
+  #navBtn img { display:block; width:1.6em; height:1.6em; filter:drop-shadow(0 .06em .2em rgba(0,0,0,.85)); user-select:none; -webkit-user-drag:none; }   /* Menü-Symbol statt Schriftzug "Navigation" */
   .more:focus-visible { outline:2px solid #8fa4ff; outline-offset:2px; border-radius:6px; }
   #infoText { margin:.5em 0 0; width:calc(var(--infow, 60) * 1vw); max-width:94vw; text-align:center; color:#fff; font:400 calc(var(--info, 1.6) * 1vw)/1.45 system-ui, sans-serif;
     text-shadow:0 .06em .35em rgba(0,0,0,.9); pointer-events:none; white-space:normal; }
@@ -169,7 +170,7 @@
     </div>
   </div>
   <div id="navBox" class="abs">
-    <button class="more" id="navBtn" type="button" aria-expanded="false" aria-controls="navRing"><span>Navigation</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg></span></button>
+    <button class="more" id="navBtn" type="button" aria-label="Navigation" aria-expanded="false" aria-controls="navRing"><img src="menu-icon.svg" alt=""></button>
   </div>
   <div id="terminBox" aria-live="polite"></div>
   <div id="navOverlay"></div>
@@ -281,7 +282,7 @@ const CFG = {
   wormVw: 0,          // Breite der Wurmlöcher im Navigations-Ring in vw (das Schild folgt automatisch)
   moreVw: 0, infoVw: 0, infoW: 0,   // Schrift "weitere Informationen", Schrift und Breite des Infotextes (aus dem Profil)
   moreText: "weitere Informationen",
-  navVw: 0, navR: 0,   // Schrift "Navigation" in vw, Radius des Wurmloch-Rings in vmin (aus dem Profil)
+  navVw: 0, navR: 0,   // Größe des Menü-Symbols (menu-icon.svg, 1,6 x dieser Wert) in vw, Radius des Wurmloch-Rings in vmin (aus dem Profil)
   color: "#ffffff", weight: 500, font: "system-ui, sans-serif",
   dim: 0.3,            // Abdunkeln des Hintergrunds (0 bis 0.9)
 
@@ -845,7 +846,7 @@ impressum.addEventListener("click", e => {
 });
 
 /* Bilder vorladen und fehlende Dateien anzeigen */
-const files = ["Zurueck.png", "Stopp.png", "play.png", "Vor.png", "logo.png", "logo2.png", "telefon.svg", "email.svg", "adresse.svg", "iserv.svg", "foerderverein.svg", "impressum-datenschutz.svg", "wurmloch-news.png", ...NAV_SIGNS.map(x => "schild-" + x[0] + ".png"), CFG.intro.bgSrc, ...CFG.loop.slides.map(x => x.bgSrc), ...new Set(MONATS_BILDER)];
+const files = ["Zurueck.png", "Stopp.png", "play.png", "Vor.png", "logo.png", "logo2.png", "telefon.svg", "email.svg", "adresse.svg", "iserv.svg", "foerderverein.svg", "impressum-datenschutz.svg", "menu-icon.svg", "wurmloch-news.png", ...NAV_SIGNS.map(x => "schild-" + x[0] + ".png"), CFG.intro.bgSrc, ...CFG.loop.slides.map(x => x.bgSrc), ...new Set(MONATS_BILDER)];
 const missing = [];
 let pending = files.length;
 files.forEach(f => {
