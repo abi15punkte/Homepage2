@@ -31,10 +31,12 @@
   .more:hover:not([aria-expanded="true"]) .chev { transform:translateY(.15em); }
   .more[aria-expanded="true"] .chev { transform:rotate(180deg); }
   #navBtn img { display:block; width:1.6em; height:1.6em; filter:drop-shadow(0 .06em .2em rgba(0,0,0,.85)); user-select:none; -webkit-user-drag:none; }   /* Menü-Symbol statt Schriftzug "Navigation" */
-  #navBtn .navTxt, #navBtn .chev { display:none; }   /* geschlossen: nur das Menü-Symbol */
-  #navBtn[aria-expanded="true"] .icMenu { display:none; }   /* geöffnet: Schriftzug "Navigation" mit Pfeil wie zuvor */
-  #navBtn[aria-expanded="true"] .navTxt { display:inline; }
-  #navBtn[aria-expanded="true"] .chev { display:inline-flex; }
+  /* Menü-Symbol und Schriftzug "Navigation" werden von derselben Zeitleiste gesteuert wie der Weg zur Bildmitte (--nt = navState.t, 0 = oben, 1 = Mitte):
+     Überblendung und Bewegung laufen dadurch exakt parallel, gleich lang und mit derselben Beschleunigung, auch beim Zurückfahren */
+  #navBtn { gap:0; }
+  #navBtn img { flex:none; min-width:0; }
+  #navBtn .icMenu { max-width:calc(1.6em * (1 - var(--nt, 0))); opacity:calc(1 - var(--nt, 0)); }
+  #navBtn .navOpen { display:inline-flex; align-items:center; gap:.35em; max-width:calc(var(--nw, 12em) * var(--nt, 0)); opacity:var(--nt, 0); overflow:hidden; padding:.35em 0; margin:-.35em 0; }
   .more:focus-visible { outline:2px solid #8fa4ff; outline-offset:2px; border-radius:6px; }
   #infoText { margin:.5em 0 0; width:calc(var(--infow, 60) * 1vw); max-width:94vw; text-align:center; color:#fff; font:400 calc(var(--info, 1.6) * 1vw)/1.45 system-ui, sans-serif;
     text-shadow:0 .06em .35em rgba(0,0,0,.9); pointer-events:none; white-space:normal; }
@@ -174,7 +176,7 @@
     </div>
   </div>
   <div id="navBox" class="abs">
-    <button class="more" id="navBtn" type="button" aria-label="Navigation" aria-expanded="false" aria-controls="navRing"><img class="icMenu" src="menu-icon.svg" alt=""><span class="navTxt">Navigation</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg></span></button>
+    <button class="more" id="navBtn" type="button" aria-label="Navigation" aria-expanded="false" aria-controls="navRing"><img class="icMenu" src="menu-icon.svg" alt=""><span class="navOpen"><span class="navTxt">Navigation</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg></span></span></button>
   </div>
   <div id="terminBox" aria-live="polite"></div>
   <div id="navOverlay"></div>
@@ -397,6 +399,10 @@ function placeNav(cfg) {
   nb.style.display = "";
   const maxX = 100 - 1.4 * CFG.navVw - 1;   // Symbol bleibt vollständig im Bild (halbe Symbolbreite + Innenabstand + 1 vw Rand)
   const x0 = Math.min(cfg.nav.x + NAV_DX, maxX);   // geschlossen: Menü-Symbol um NAV_DX vw nach rechts verschoben
+  const t = navState.t, no = nb.querySelector(".navOpen");
+  const key = CFG.navVw + "|" + innerWidth;
+  if (nb.dataset.k !== key) { no.style.setProperty("--nw", "9999px"); nb.dataset.k = key; nb.dataset.w = no.scrollWidth + 2; }   // volle Breite von Schriftzug + Pfeil einmal je Größe messen
+  nb.style.setProperty("--nt", t); no.style.setProperty("--nw", nb.dataset.w + "px");   // Überblendung läuft mit der Bewegung
   nb.style.left = (x0 + (50 - x0) * navState.t) + "%";   // beim Aufklappen wandert der Schriftzug in die Bildmitte
   nb.style.top = (cfg.nav.y + (50 - cfg.nav.y) * navState.t) + "%";
 }
