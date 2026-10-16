@@ -1,220 +1,885 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prototyp: Positionen im Hochformat</title>
-<!-- Diese Datei in denselben Ordner wie logo.png, logo2.png, Zurueck.png, Stopp.png, Vor.png und Juni.jpg legen.
-     Fehlende Bilder werden durch Platzhalter ersetzt. -->
+<title>Prototyp: Termine</title>
+<!--
+  Lege diese Datei in einen Ordner zusammen mit:
+  Januar.png bis Dezember.png, Juni als Juni.jpg (Intro und Termine), 002.jpg, 003.jpg, 004.jpg (Karussell), logo.png, logo2.png,
+  wurmloch-news.png, schild-news.png, schild-schule.png, schild-ganztag.png, schild-termine.png, schild-kontakt.png, schild-support.png (Wurmlöcher der Navigation),
+  Zurueck.png, Stopp.png, play.png, Vor.png (Symbole)
+-->
 <style>
-  * { box-sizing:border-box; }
-  html, body { margin:0; height:100%; background:#1c1e24; color:#e8eaf0; font:14px/1.4 system-ui, sans-serif; }
-  #app { display:flex; gap:20px; padding:12px; min-height:100%; align-items:flex-start; justify-content:center; }
-  #frame { position:relative; flex:none; border-radius:10px; overflow:hidden; box-shadow:0 0 0 1px #3a3e4a; }
-  #stage { position:absolute; left:0; top:0; transform-origin:0 0; overflow:hidden;
-    background:url(Juni.jpg) center/cover no-repeat, linear-gradient(160deg,#2b4a7a,#142038 70%); }
-  .el { position:absolute; transform:translate(-50%,-50%); }
-  .el img, .sg img { display:block; height:auto; max-width:none; user-select:none; -webkit-user-drag:none; }
-  .sg { display:flex; align-items:center; }
-  .sw { position:relative; display:flex; }
-  #credit, #imp { color:#fff; font-size:var(--small); line-height:1.2; white-space:nowrap; text-shadow:0 .08em .25em rgba(0,0,0,.85); }
-  #credit { position:absolute; left:50%; top:100%; transform:translateX(-50%); pointer-events:none; }
-  #imp { position:absolute; transform:translate(-50%,-50%); text-decoration:none; cursor:grab; touch-action:none; padding:.3em .6em; outline:1px dashed rgba(255,255,255,.55); outline-offset:-1px; }
-  #imp.drag { cursor:grabbing; }
+  html, body { margin:0; height:100%; background:#111; overflow:hidden; }
+  .stage { position:fixed; inset:0; overflow:hidden; }
+  #bg { position:absolute; inset:0; background-size:cover; background-position:50% 50%; background-repeat:no-repeat; }
+  #bg::after { content:""; position:absolute; inset:0; background:rgba(0,0,0,var(--dim, 0)); }
+  .stage > .abs { visibility:hidden; }   /* bis die Animation startet, ist nichts sichtbar */
+  .abs { position:absolute; transform:translate(-50%, -50%); text-align:center; width:max-content; }
+  #textBox { width:max-content; max-width:92%; }
+  #titel { margin:0; line-height:1.2; }
+  .logo { display:block; height:auto; max-width:none; flex:none; }
 
-  #panel { width:320px; flex:none; display:flex; flex-direction:column; gap:16px; }
-  fieldset { border:1px solid #3a3e4a; border-radius:8px; margin:0; padding:10px 12px 12px; }
-  legend { padding:0 6px; font-weight:600; }
-  .row { display:flex; align-items:center; gap:8px; margin-top:8px; }
-  .row label { width:92px; flex:none; }
-  select, input[type=number], button { font:inherit; color:inherit; background:#2a2d36; border:1px solid #4a4f5e; border-radius:6px; padding:6px 8px; }
-  select { flex:1; }
-  button { cursor:pointer; }
-  button:hover { background:#343846; }
-  .seg { display:flex; gap:6px; }
-  .seg button { flex:1; }
-  .seg button.on { background:#3d5fa8; border-color:#6f8fe0; }
-  input[type=range] { flex:1; min-width:0; }
-  input[type=number] { width:74px; }
-  pre { margin:0; padding:10px; background:#12141a; border:1px solid #3a3e4a; border-radius:6px; font:12px/1.5 ui-monospace, Menlo, Consolas, monospace; white-space:pre-wrap; }
-  .hint { margin:8px 0 0; color:#a2a8b8; font-size:12px; }
-  @media (max-width:780px) { #app { flex-direction:column; align-items:center; } #panel { width:100%; max-width:420px; } }
+  /* ---------- "weitere Informationen" + aufklappbarer Text (nur Karussell) ---------- */
+  #moreWrap { position:absolute; left:50%; top:100%; transform:translateX(-50%); width:max-content; display:flex; flex-direction:column; align-items:center;
+    font-size:calc(var(--more, 2) * 1vw); pointer-events:none; }
+  .more { pointer-events:auto; display:inline-flex; align-items:center; gap:.35em; border:0; background:none; padding:.3em .6em; cursor:pointer; white-space:nowrap;
+    color:#fff; font:500 1em/1.2 system-ui, sans-serif; text-shadow:0 .06em .3em rgba(0,0,0,.85); -webkit-tap-highlight-color:transparent; }
+  .more .chev { display:inline-flex; transition:transform .35s ease; }
+  .more svg { display:block; width:1em; height:1em; overflow:visible; }
+  .more:hover:not([aria-expanded="true"]) .chev { transform:translateY(.15em); }
+  .more[aria-expanded="true"] .chev { transform:rotate(180deg); }
+  .more:focus-visible { outline:2px solid #8fa4ff; outline-offset:2px; border-radius:6px; }
+  #infoText { margin:.5em 0 0; width:calc(var(--infow, 60) * 1vw); max-width:94vw; text-align:center; color:#fff; font:400 calc(var(--info, 1.6) * 1vw)/1.45 system-ui, sans-serif;
+    text-shadow:0 .06em .35em rgba(0,0,0,.9); pointer-events:none; white-space:normal; }
+
+  /* ---------- Navigation (oben mittig, klappt zur Bildmitte auf) ---------- */
+  #navBox { z-index:100; font-size:calc(var(--nav, 2) * 1vw); }   /* höchste Ebene */
+  #navOverlay { position:absolute; inset:0; z-index:90; pointer-events:none; }
+  #navOverlay.on { pointer-events:auto; cursor:pointer; }
+  #navRing { position:absolute; inset:0; z-index:99; pointer-events:none; visibility:hidden; }
+  #navRing .portal { pointer-events:none; }
+  #navRing.open .portal { pointer-events:auto; }
+  .navWorm { position:absolute; width:var(--size); height:var(--size); margin:calc(var(--size) / -2) 0 0 calc(var(--size) / -2); }
+
+  /* ---------- Wurmloch (News) ---------- */
+  .navWorm {
+    --img:url("wurmloch-news.png"); --sign-img:url("schild-news.png");
+    --cx:50.3%; --cy:48.7%; --gx:49.8%; --gy:56.2%; --size:7vw;   /* Breite des Wurmlochs (wird per Skript gesetzt) */
+    --sign:.7; --float:5%; --breathe:1.1; --pulse-t:2s; --sway:6deg; --sway-t:4.8s; --dive:10; --ratio:1.9365;
+    --sw:calc(var(--size) * var(--sign));
+  }
+  .nwInner { transform-origin:50.3% 48.7%; }   /* Zoom-Mittelpunkt = Kern des Wurmlochs */
+  .portal { position:relative; display:block; width:var(--size); aspect-ratio:1; flex:none; cursor:pointer; border:0; padding:0; background:none;
+    -webkit-tap-highlight-color:transparent; animation:float 6s ease-in-out infinite;
+    transition:transform .35s ease, filter .35s ease, opacity .5s ease; }
+  .portal:hover, .portal:focus-visible { transform:scale(1.05); filter:brightness(1.08) saturate(1.1); }
+  .portal:focus-visible { outline:3px solid #8fa4ff; outline-offset:8px; border-radius:50%; }
+  .body { position:absolute; inset:0; pointer-events:none; transform-origin:var(--cx) var(--cy); animation:breathe 7s ease-in-out infinite; }
+  .img { position:absolute; inset:0; background:var(--img) center/100% 100% no-repeat; }
+  .glow { position:absolute; pointer-events:none; left:calc(var(--gx) - 20%); top:calc(var(--gy) - 20%); width:40%; aspect-ratio:1; border-radius:50%;
+    background:radial-gradient(circle,rgba(255,244,200,.85) 0%,rgba(255,214,120,.45) 38%,rgba(255,200,90,0) 70%); mix-blend-mode:screen;
+    animation:pulse var(--pulse-t,3.4s) ease-in-out infinite; }
+  .orbit { position:absolute; pointer-events:none; left:calc(var(--cx) - var(--r)); top:calc(var(--cy) - var(--r)); width:calc(var(--r) * 2); aspect-ratio:1; }
+  .orbit::after { content:""; position:absolute; left:50%; top:0; width:var(--s,2.4%); aspect-ratio:1; translate:-50% -50%; border-radius:50%;
+    background:radial-gradient(circle,#fff 0%,#ffe08a 45%,rgba(255,200,80,0) 72%); box-shadow:0 0 calc(var(--size) * .074) calc(var(--size) * .022) rgba(255,214,110,.7);
+    animation:twinkle 2.8s ease-in-out var(--dly,0s) infinite; }
+  @keyframes float { 0%,100%{translate:0 0} 50%{translate:0 calc(var(--float) * -1)} }
+  @keyframes breathe { 0%,100%{scale:1} 50%{scale:var(--breathe)} }
+  @keyframes pulse { 0%,100%{opacity:.35;scale:.85} 50%{opacity:.9;scale:1.1} }
+  @keyframes twinkle { 0%,100%{opacity:.25} 50%{opacity:1} }
+  .portal.dive { transform:scale(var(--dive)); opacity:0; filter:brightness(1.5); transition:transform .9s cubic-bezier(.6,0,.9,.4), opacity .9s ease-in, filter .9s; }
+  .portal.back { transition:none; transform:scale(.6); opacity:0; }
+  .signbox { position:absolute; left:0; width:100%; top:94%; height:0; display:flex; justify-content:center; align-items:flex-start; pointer-events:none; }
+  .sign { flex:none; width:var(--sw); aspect-ratio:var(--ratio); margin-top:calc(var(--sw) / var(--ratio) / -2);
+    background:var(--sign-img) center/100% 100% no-repeat; filter:drop-shadow(0 .6em .9em rgba(10,8,40,.45)); font-size:calc(var(--sw) / 40);
+    transform-origin:50% 40%; animation:sway var(--sway-t,4.8s) ease-in-out infinite; }
+  @keyframes sway { 0%,100%{rotate:calc(var(--sway) * -1);translate:0 0} 50%{rotate:var(--sway);translate:0 2%} }
+  @media (prefers-reduced-motion:reduce) { .portal,.body,.glow,.orbit,.orbit::after,.sign{animation:none} .glow{opacity:.5} .portal.dive{transform:none;filter:none} }
+
+  /* ---------- Steuer-Symbole unten in der Bildmitte ---------- */
+  #symbole { z-index:6; }
+  #symGroup { display:flex; align-items:center; }
+  #impBox { transform:translateX(-50%); z-index:7; font:400 var(--small, 0.8vw)/1.2 system-ui, sans-serif; }   /* eigene Ebene, unabhängig von den Logo-Grenzen */
+  .impressum { display:block; pointer-events:auto; cursor:pointer; white-space:nowrap; color:#fff; text-decoration:none;
+    font:400 var(--small, 0.8vw)/1.2 system-ui, sans-serif; text-shadow:0 .08em .25em rgba(0,0,0,.85); }
+  .impressum:hover, .impressum:focus-visible { text-decoration:underline; }
+  .stopwrap { position:relative; display:flex; }
+  .credit { position:absolute; left:50%; top:100%; transform:translateX(-50%); margin-top:calc(var(--cgap, 0) * 1vh); white-space:nowrap; pointer-events:none;
+    font:400 var(--small, 0.8vw)/1.2 system-ui, sans-serif; color:#fff; text-shadow:0 .08em .25em rgba(0,0,0,.85); }
+  .sbtn { display:block; border:0; padding:0; background:none; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:transform .15s ease, opacity .2s ease; }
+  .sbtn img { display:block; height:auto; max-width:none; user-select:none; -webkit-user-drag:none; }
+  .sbtn:hover { transform:scale(1.12); }
+  .sbtn:active { transform:scale(.92); }
+  .sbtn:focus-visible { outline:2px solid #8fa4ff; outline-offset:4px; border-radius:6px; }
+
+  /* ---------- Nur Hochformat: Symbolgruppe rechts neben den Steuersymbolen, Bildnachweis zentriert unten ---------- */
+  #iconBox { z-index:6; }
+  #iconRow { display:grid; grid-template-columns:repeat(3, calc(var(--icell, 19) * 1vw)); row-gap:calc(var(--igap, 1) * 1vw); justify-items:center; align-items:start; }
+  .ibtn { display:flex; flex-direction:column; align-items:center; gap:.3em; width:100%; padding:0; border:0; background:none; color:#fff; text-decoration:none; cursor:pointer;
+    font:400 var(--small, 0.8vw)/1.2 system-ui, sans-serif; text-shadow:0 .08em .25em rgba(0,0,0,.85); -webkit-tap-highlight-color:transparent; transition:transform .15s ease; }
+  .ibtn img { display:block; width:calc(var(--ivw, 9) * 1vw); height:auto; filter:drop-shadow(0 .1em .3em rgba(0,0,0,.55)); user-select:none; -webkit-user-drag:none; }
+  .ibtn span { text-align:center; }
+  .ibtn:hover { transform:scale(1.08); }
+  .ibtn:active { transform:scale(.94); }
+  .ibtn:focus-visible { outline:2px solid #8fa4ff; outline-offset:3px; border-radius:6px; }
+  #creditBox { z-index:6; pointer-events:none; }
+  #creditB { white-space:nowrap; color:#fff; font:400 var(--small, 0.8vw)/1.2 system-ui, sans-serif; text-shadow:0 .08em .25em rgba(0,0,0,.85); }
+
+  #fehlt { position:fixed; left:8px; bottom:8px; z-index:9; font:12px system-ui, sans-serif; background:#fff3cd; color:#664d03; padding:6px 8px; border-radius:6px; display:none; }
+
+  /* ---------- Termine: Terminschilder ---------- */
+  #terminBox { position:absolute; left:50%; transform:translateX(-50%); z-index:3; display:none; flex-direction:column; gap:calc(var(--info, 1.5) * .8vw);
+    width:74vw; color:#fff; font:400 calc(var(--info, 1.5) * 1vw)/1.3 system-ui, sans-serif; scrollbar-width:none; }
+  #terminBox.scroll { overflow-y:auto; }
+  #terminBox::-webkit-scrollbar { display:none; }
+  .evList { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, calc(var(--info, 1.5) * 19vw)), 1fr)); gap:calc(var(--info, 1.5) * .6vw); }
+  .evCard { display:flex; align-items:stretch; gap:.75em; padding:.55em .8em .55em .6em; border-radius:.8em; border:1px solid rgba(255,255,255,.24);
+    background:linear-gradient(135deg, rgba(12,18,32,.58), rgba(12,18,32,.36)); box-shadow:0 .3em 1.2em rgba(0,0,0,.28); }
+  .evCard.hl { border-color:rgba(255,244,190,.9); background:linear-gradient(135deg, rgba(40,46,70,.72), rgba(30,36,60,.5)); box-shadow:0 0 1.4em rgba(255,236,150,.35); }
+  .evDate { display:flex; flex-direction:column; justify-content:center; align-items:center; min-width:2.4em; padding-right:.7em; border-right:1px solid rgba(255,255,255,.3); line-height:1; }
+  .evDate small { font-size:.62em; letter-spacing:.14em; text-transform:uppercase; opacity:.85; margin-bottom:.25em; }
+  .evDate b { font-size:1.9em; font-weight:600; }
+  .evBody { display:flex; flex-direction:column; justify-content:center; min-width:0; }
+  .evBody h3 { margin:0; font-size:1.08em; font-weight:600; line-height:1.2; }
+  .evBody p { margin:.2em 0 0; font-size:.82em; opacity:.85; }
+  .evCard.past .evDate, .evCard.past .evBody { opacity:.5; }
 </style>
 </head>
 <body>
-<div id="app">
-  <div id="frame">
-    <div id="stage">
-      <div class="el" id="eLogo"><img id="iLogo" src="logo.png" alt="Logo"></div>
-      <div class="el" id="eLogo2"><img id="iLogo2" src="logo2.png" alt="Logo 2"></div>
-      <div class="el" id="eSyms"><div class="sg">
-        <img id="iBack" src="Zurueck.png" alt="Zurück">
-        <span class="sw"><img id="iStop" src="Stopp.png" alt="Stopp"><span id="credit">Foto: Name, Klasse</span></span>
-        <img id="iNext" src="Vor.png" alt="Vor">
-      </div></div>
-      <a id="imp" href="#">Impressum</a>
+<div class="stage" id="stage">
+  <div id="bg"></div>
+  <div id="logoBox" class="abs"><img id="logo" class="logo" src="logo.png" alt="Logo"></div>
+  <div id="logoBox2" class="abs"><img id="logo2" class="logo" src="logo2.png" alt="Logo 2"></div>
+  <template id="wormTpl"><div>
+    <button class="portal" aria-label="News – Wurmloch betreten">
+      <span class="body"><span class="img"></span><span class="glow"></span></span>
+      <i class="orbit" style="--r:9%;--t:9s;--dly:-1s;--s:2.2%"></i>
+      <i class="orbit" style="--r:14%;--t:14s;--dly:-4s;--s:2.6%"></i>
+      <i class="orbit" style="--r:19%;--t:11s;--dly:-7s;--dir:normal;--s:2%"></i>
+      <i class="orbit" style="--r:24%;--t:18s;--dly:-2s;--s:2.8%"></i>
+      <i class="orbit" style="--r:28%;--t:22s;--dly:-12s;--dir:normal;--s:2.2%"></i>
+      <i class="orbit" style="--r:16%;--t:16s;--dly:-9s;--s:1.8%"></i>
+      <span class="signbox"><span class="sign" role="img" aria-label="News"></span></span>
+    </button>
+  </div></template>
+  <div id="symbole" class="abs"><div id="symGroup">
+    <button class="sbtn" id="btnZurueck" type="button" aria-label="Zurück"><img id="symZurueck" src="Zurueck.png" alt=""></button>
+    <span class="stopwrap">
+      <button class="sbtn" id="btnStopp"   type="button" aria-label="Stopp / Fortsetzen"><img id="symStopp" src="Stopp.png" alt=""></button>
+      <span class="credit" id="credit"></span>   <!-- Bildnachweis, zentriert unter dem Stopp/Play-Button -->
+    </span>
+    <button class="sbtn" id="btnVor"     type="button" aria-label="Vor"><img id="symVor" src="Vor.png" alt=""></button>
+  </div></div>
+  <div id="impBox" class="abs"><a id="impressum" class="impressum" href="#">Impressum</a></div>
+  <div id="iconBox" class="abs"><div id="iconRow">
+    <a class="ibtn" href="#" data-k="telefon" aria-label="Telefon"><img src="telefon.svg" alt=""><span>Telefon</span></a>
+    <a class="ibtn" href="#" data-k="email" aria-label="E-Mail"><img src="email.svg" alt=""><span>E-Mail</span></a>
+    <a class="ibtn" href="#" data-k="adresse" aria-label="Adresse"><img src="adresse.svg" alt=""><span>Adresse</span></a>
+    <a class="ibtn" href="#" data-k="iserv" aria-label="IServ"><img src="iserv.svg" alt=""><span>IServ</span></a>
+    <a class="ibtn" href="#" data-k="foerderverein" aria-label="Förderverein"><img src="foerderverein.svg" alt=""><span>Förderverein</span></a>
+    <a class="ibtn" href="#" data-k="impressum" aria-label="Impressum und Datenschutz"><img src="impressum-datenschutz.svg" alt=""><span>Impressum &amp; Datenschutz</span></a>
+  </div></div>
+  <div id="creditBox" class="abs"><span id="creditB"></span></div>
+  <div id="textBox" class="abs"><h1 id="titel"></h1>
+    <div id="moreWrap">
+      <button class="more" id="moreBtn" type="button" aria-expanded="false" aria-controls="infoText"><span id="moreText"></span><span class="chev"><svg id="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg></span></button>
+      <div id="infoText" aria-hidden="true"></div>
     </div>
   </div>
-
-  <div id="panel">
-    <fieldset>
-      <legend>Designendpunkt</legend>
-      <div class="seg" id="epSeg">
-        <button type="button" data-ep="schmal">Schmal 394 × 734</button>
-        <button type="button" data-ep="ipad">iPad hoch 810 × 948</button>
-      </div>
-    </fieldset>
-
-    <fieldset>
-      <legend>Anordnung</legend>
-      <div id="slots"></div>
-      <div class="row">
-        <button type="button" id="next" style="flex:1">Nächste Anordnung</button>
-        <button type="button" id="orig" style="flex:1">Original</button>
-      </div>
-      <div class="row"><label for="clamp" style="width:auto"><input type="checkbox" id="clamp"> im Bildrand halten</label></div>
-      <p class="hint">Getauscht werden nur die Mittelpunkt-Positionen; Größen bleiben wie im Original.</p>
-    </fieldset>
-
-    <fieldset>
-      <legend>Impressum</legend>
-      <div class="row"><label for="rx">Waagerecht</label><input type="range" id="rx" min="0" max="100" step="0.1"><input type="number" id="nx" min="0" max="100" step="0.1"></div>
-      <div class="row"><label for="ry">Senkrecht</label><input type="range" id="ry" min="0" max="100" step="0.1"><input type="number" id="ny" min="0" max="100" step="0.1"></div>
-      <div class="row"><button type="button" id="impReset">Zurücksetzen</button></div>
-      <p class="hint">Der Schriftzug lässt sich auch direkt im Bild ziehen. Werte in % der Bühne, Mittelpunkt.</p>
-    </fieldset>
-
-    <fieldset>
-      <legend>Werte zum Übernehmen</legend>
-      <pre id="out"></pre>
-      <div class="row"><button type="button" id="copy">Kopieren</button></div>
-    </fieldset>
+  <div id="navBox" class="abs">
+    <button class="more" id="navBtn" type="button" aria-expanded="false" aria-controls="navRing"><span>Navigation</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg></span></button>
   </div>
+  <div id="terminBox" aria-live="polite"></div>
+  <div id="navOverlay"></div>
+  <div id="navRing" role="navigation" aria-label="Navigation"></div>
 </div>
+<div id="fehlt"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
 <script>
+gsap.registerPlugin(SplitText);
+
+/* ============================================================
+   EINSTELLUNGEN
+   Positionen x/y in Prozent der Bühne. Zeiten in Sekunden.
+   "at" = absolute Startzeit beim Einblenden,
+   "offset" = Versatz zum Ausblenden-Zeitpunkt (Label "out").
+   ============================================================ */
+/* ---------- Feste relative Werte, getrennt für Querformat und Hochformat ----------
+   vw = % der Fensterbreite, vh = % der Fensterhöhe, vmin = % der kürzeren Fensterseite.
+   Pro Ausrichtung gibt es zwei Stützstellen (Seitenverhältnis = Breite / Höhe).
+   Dazwischen werden ALLE Werte stetig (linear) mit dem Seitenverhältnis überblendet,
+   außerhalb der Stützstellen bleiben sie auf dem jeweils nächsten Wert stehen. */
+const ANCHORS = {
+  land: [   // aufsteigend nach Seitenverhältnis
+    { ar:1080/678, v:{   // iPad quer, 1080 x 678 px
+      fontVw:4.75, moreVw:2.00, infoVw:1.70, infoW:62, navVw:2.00, termW:74, navX:50, navY:4, navR:30, logoVw:18.52, logo2Vw:11.90, introLogo2Vw:32.41, wormVw:9.90,
+      back:2.78, stop:3.70, next:2.78, gap:0.93, smallVw:1.11,
+      creditGap:-0.12, impressumDx:1.65,
+      moveOut:-2.95, blurIn:2.21, blurOut:1.77, blurBgIn:2.21, blurBgOut:2.95,
+      intro:{ text:{x:50, y:30}, logo2:{x:50, y:50} },
+      loop: { text:{x:50, y:10}, logo:{x:11.5, y:93.8}, logo2:{x:91.7, y:92.7}, syms:{x:50, y:94} }
+    }},
+    { ar:1536/695, v:{   // breites Querformat, 1536 x 695 px
+      fontVw:3.91, moreVw:1.70, infoVw:1.35, infoW:52, navVw:1.70, termW:74, navX:50, navY:4, navR:30, logoVw:13.02, logo2Vw:9.77, introLogo2Vw:22.79, wormVw:7.00,
+      back:1.95, stop:2.60, next:1.95, gap:0.65, smallVw:0.78,
+      creditGap:-0.14, impressumDx:0.95,
+      moveOut:-2.88, blurIn:2.16, blurOut:1.73, blurBgIn:2.16, blurBgOut:2.88,
+      intro:{ text:{x:50, y:30}, logo2:{x:50, y:50} },
+      loop: { text:{x:50, y:15}, logo:{x:8, y:93}, logo2:{x:94, y:92}, syms:{x:50, y:94} }
+    }}
+  ],
+  port: [
+    { ar:394/734, v:{    // schmales Hochformat, 394 x 734 px
+      fontVw:8.10, moreVw:4.20, infoVw:3.80, infoW:88, navVw:4.45, termW:90, navX:80, navY:5.2, navR:30, logoVw:40.00, logo2Vw:25.00, introLogo2Vw:40.00, wormVw:20.00,
+      back:7.00, stop:9.00, next:7.00, gap:2.00, smallVw:2.58,
+      creditGap:-0.18, impressumDx:-5.40,
+      iconVw:9.5, iconCell:19, iconGap:1.0, iconX:65, iconY:88.8, creditY:98.6,   // Symbolgruppe (Breite Symbol, Zellbreite, Zeilenabstand in vw; Mitte x/y in %), Bildnachweis y in %
+      moveOut:-2.72, blurIn:3.81, blurOut:3.05, blurBgIn:3.81, blurBgOut:5.08,
+      intro:{ text:{x:50, y:29.9}, logo2:{x:50, y:40.2} },
+      loop: { text:{x:50, y:13.9}, logo:{x:23.2, y:5}, logo2:{x:15.5, y:5}, syms:{x:19.5, y:88.8} }
+    }},
+    { ar:810/948, v:{    // iPad hoch, 810 x 948 px
+      fontVw:7.00, moreVw:3.00, infoVw:2.40, infoW:84, navVw:3.20, termW:60, navX:88.6, navY:3.5, navR:30, logoVw:25.00, logo2Vw:20.00, introLogo2Vw:40.00, wormVw:14.00,
+      back:3.70, stop:4.94, next:3.70, gap:1.23, smallVw:1.48,
+      creditGap:0, impressumDx:-5.70,
+      iconVw:5.2, iconCell:11, iconGap:0.8, iconX:41.5, iconY:89.3, creditY:98.6,
+      moveOut:-2.11, blurIn:1.85, blurOut:1.48, blurBgIn:1.85, blurBgOut:2.47,
+      intro:{ text:{x:50, y:30}, logo2:{x:50, y:44.8} },
+      loop: { text:{x:50, y:17.9}, logo:{x:13, y:3.5}, logo2:{x:13, y:3.5}, syms:{x:14, y:89.3} }
+    }}
+  ]
+};
+const profileName = () => innerWidth >= innerHeight ? "land" : "port";
+
+/* Überblendet zwei (auch verschachtelte) Wertesätze: t = 0 → a, t = 1 → b */
+function mix(a, b, t) {
+  if (typeof a === "number") return a + (b - a) * t;
+  const o = {};
+  for (const k in a) o[k] = mix(a[k], b[k], t);
+  return o;
+}
+function profileValues() {
+  const [A, B] = ANCHORS[profileName()], ar = innerWidth / innerHeight;
+  const t = Math.min(1, Math.max(0, (ar - A.ar) / (B.ar - A.ar)));
+  const v = mix(A.v, B.v, t);
+  /* Hochformat: Breite der Terminliste erreicht ihre 60 vw schon bei Seitenverhältnis 0,75 (nahezu quadratisch), nicht erst bei 810 x 948 */
+  if (profileName() === "port") {
+    const k = Math.min(1, Math.max(0, (ar - A.ar) / (TERM_NARROW_AR - A.ar)));
+    v.termW = mix(A.v.termW, B.v.termW, k);
+  }
+  return v;
+}
+const TERM_NARROW_AR = 0.75;
+
+/* Weichzeichner (vmin) und Ausblend-Versatz (vh) gelten für alle Elemente gemeinsam */
+const REL = { blur:{ in:0, out:0, bgIn:0, bgOut:0 }, moveOut:0, creditGap:0 };
+
+const BG_OUT = { blur:"bgOut", scale:1, y:0,     duration:1,   ease:"power2.in", offset:0 };
+const TXT_OUT = { blur:"out",  scale:1, y:"out", duration:0.5, ease:"power2.in", each:0.03, from:"end", offset:0 };
+const LOGO_OUT = offset => ({ blur:"out", scale:1, y:"out", duration:0.5, ease:"power2.in", offset });
+
+/* Infotext: gleicher Effekt wie der übrige Text, Gesamtdauer des Staffelns über "amount" begrenzt */
+const INFO_IN  = { blur:"in",  scale:1.4, y:0,     duration:1,   ease:"power2.out", amount:1.4, from:"start" };
+const INFO_OUT = { blur:"out", scale:1,   y:"out", duration:0.5, ease:"power2.in",  amount:0.5, from:"end", offset:0 };
+
+/* Navigation: Anzahl Wurmlöcher im Ring, Stärke der Unschärfe dahinter (vmin), Einblend-Effekt wie bei den Logos */
+const NAV_COUNT = 6, NAV_BLUR_VMIN = 4;
+/* Schilder der Navigations-Wurmlöcher: Dateiname schild-<name>.png, Beschriftung und Größenfaktor (1 = Standard), im Uhrzeigersinn ab oben */
+const NAV_SIGNS = [["news","News",1], ["schule","Schule",1.21], ["ganztag","Ganztag",1.21], ["termine","Termine",1.21], ["kontakt","Kontakt",1.21], ["support","Support",1.21]];
+const NAV_IN = { blur:"in", scale:1.4, y:0, duration:1.25, ease:"power2.out", each:0.1, from:"start" };
+
+/* Hintergrundbild je Kalendermonat (0 = Januar): Januar.png bis Dezember.png. Das Intro nutzt das Bild des aktuellen Monats. */
+const MONATS_BILDER = ["Januar.png","Februar.png","März.png","April.png","Mai.png","Juni.jpg","Juli.png","August.png","September.png","Oktober.png","November.png","Dezember.png"];
+
+const CFG = {
+  fontVw: 0,          // Textgröße in vw (kommt aus dem Profil)
+  smallVw: 0,         // Schrift von Bildnachweis und Impressum in vw (kommt aus dem Profil)
+  wormVw: 0,          // Breite der Wurmlöcher im Navigations-Ring in vw (das Schild folgt automatisch)
+  moreVw: 0, infoVw: 0, infoW: 0,   // Schrift "weitere Informationen", Schrift und Breite des Infotextes (aus dem Profil)
+  moreText: "weitere Informationen",
+  navVw: 0, navR: 0,   // Schrift "Navigation" in vw, Radius des Wurmloch-Rings in vmin (aus dem Profil)
+  color: "#ffffff", weight: 500, font: "system-ui, sans-serif",
+  dim: 0.3,            // Abdunkeln des Hintergrunds (0 bis 0.9)
+
+  /* ---------- 1. Durchlauf (einmalig) ---------- */
+  intro: {
+    bgSrc: MONATS_BILDER[new Date().getMonth()], text: "Willkommen an der",
+    hold: 1, pauseAfter: 0,
+    bg:    { in:{ at:0, blur:"bgIn", scale:1.4, duration:2, ease:"power1.in" }, out:BG_OUT },
+    textPos:{ x:50, y:30 },
+    textIn:{ at:1, blur:"in", scale:1.4, duration:1.5, ease:"power2.out", each:0.15, from:"start" }, textOut:TXT_OUT,
+    logo:  null,   // logo.png ist im ersten Durchlauf nicht sichtbar
+    logo2: { x:50, y:50, width:0, plate:false, in:{ at:3.75, blur:"in", scale:1.4, duration:2, ease:"power1.in" }, out:LOGO_OUT(0.15) }
+  },
+
+  /* ---------- ab 2. Durchlauf: Schleife (endlos) ---------- */
+  loop: {
+    slides: [
+      // credit: Name des Kindes, das das Foto aufgenommen hat, und Klasse (Platzhalter bitte ersetzen)
+      { bgSrc:"002.jpg", text:"Unser Sportplatz",   credit:{ name:"Max Mustermann", klasse:"M14" },
+        info:"Der Sportplatz wurde im vergangenen Sommer neu angelegt. Er bietet Platz für Fußball, Leichtathletik und unser Sportfest am Ende des Schuljahres. In den großen Pausen steht er allen Klassen offen." },
+      { bgSrc:"003.jpg", text:"Text für 003.jpg",   credit:{ name:"Erika Beispiel", klasse:"ehemals M7" },
+        info:"Dies ist ein ausgedachter Beispieltext für das dritte Bild. Hier stehen später ein paar Sätze mit weiteren Informationen, zum Beispiel wann das Foto entstanden ist, wer darauf zu sehen ist und welche Aktion dahintersteckt." },
+      { bgSrc:"004.jpg", text:"Text für 004.jpg",   credit:{ name:"Name Nachname",  klasse:"M14" },
+        info:"Auch dieser Text ist nur ein Platzhalter. Er zeigt, wie mehrere Zeilen Fließtext eingeblendet werden, wenn man auf „weitere Informationen“ klickt. Das Karussell bleibt dabei so lange angehalten, bis du auf Play drückst." }
+    ],
+    hold: 2.5, pauseAfter: 0.5,
+    bg:    { in:{ at:0, blur:"bgIn", scale:1.4, duration:2.5, ease:"power2.out" }, out:BG_OUT },
+    textPos:{ x:50, y:10 },
+    textIn:{ at:0.5, blur:"in", scale:1.4, duration:1, ease:"power2.out", each:0.1, from:"start" }, textOut:TXT_OUT,
+    moreIn:{ at:1.2, blur:"in", scale:1.4, duration:1, ease:"power2.out", each:0.04, from:"start" },   // zweite Zeile: gleicher Effekt, etwas schnellerer Takt
+    nav:   { x:50, y:0, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) },   // y kommt aus dem Profil
+    logo:  { x:8,  y:93, width:0, plate:false, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) },
+    logo2: { x:94, y:92, width:0, plate:false, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.15) },
+    syms:  { x:50, y:94, gap:0, back:0, stop:0, next:0,   // Breiten in vw
+             in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) },
+    impressum: true,   // Schriftzug unter logo2.png (blendet exakt wie logo2.png ein und aus)
+    impressumDx: 0,    // waagerechter Versatz gegenüber der Mitte von logo2.png in vw (positiv = nach rechts)
+  }
+};
+
+/* Termine-Modus: erbt alle Positionen, Größen und Effekte der Schleife (Navigation, Logos, Symbole ...) und ersetzt nur die Seiten */
+const TERMIN_CFG = Object.create(CFG.loop);
+Object.assign(TERMIN_CFG, {
+  termin: true,
+  slides: [],   // wird beim Start der Termine-Seiten aus dem aktuellen Datum aufgebaut (siehe startTermine)
+  hold: 9, pauseAfter: 0.3,   // Wartezeit nur beim automatischen Weiterblättern (Play)
+  cardsIn:   { at:1.0, blur:"in",  scale:1.2,  duration:1,   ease:"power2.out", each:0.12, from:"start" },        // Terminschilder
+  terminOut: { blur:"out", scale:1, y:"out", duration:0.5, ease:"power2.in", each:0.05, from:"end", offset:0 }
+});
+CFG.termine = TERMIN_CFG;
+
+/* Überträgt das passende Profil (Quer- oder Hochformat) in CFG und REL */
+function applyProfile() {
+  const P = profileValues();
+  CFG.termW = P.termW; CFG.navVw = P.navVw; CFG.navR = P.navR; CFG.loop.nav.x = P.navX; CFG.loop.nav.y = P.navY; CFG.moreVw = P.moreVw; CFG.infoVw = P.infoVw; CFG.infoW = P.infoW; CFG.fontVw = P.fontVw; CFG.smallVw = P.smallVw; CFG.wormVw = P.wormVw;
+  REL.creditGap = P.creditGap; REL.moveOut = P.moveOut;
+  REL.blur.in = P.blurIn; REL.blur.out = P.blurOut; REL.blur.bgIn = P.blurBgIn; REL.blur.bgOut = P.blurBgOut;
+  const I = CFG.intro, L = CFG.loop;
+  I.textPos.x = P.intro.text.x;  I.textPos.y = P.intro.text.y;
+  I.logo2.x = P.intro.logo2.x;   I.logo2.y = P.intro.logo2.y;  I.logo2.width = P.introLogo2Vw;
+  L.textPos.x = P.loop.text.x;   L.textPos.y = P.loop.text.y;
+  L.logo.x = P.loop.logo.x;      L.logo.y = P.loop.logo.y;     L.logo.width = P.logoVw;
+  L.logo2.x = P.loop.logo2.x;    L.logo2.y = P.loop.logo2.y;   L.logo2.width = P.logo2Vw;
+  L.syms.x = P.loop.syms.x;      L.syms.y = P.loop.syms.y;
+  L.syms.gap = P.gap; L.syms.back = P.back; L.syms.stop = P.stop; L.syms.next = P.next;
+  L.impressumDx = P.impressumDx;
+  if (P.iconVw != null) { CFG.icon = { vw:P.iconVw, cell:P.iconCell, gap:P.iconGap, x:P.iconX, y:P.iconY }; CFG.creditY = P.creditY; }   // nur Hochformat
+}
+applyProfile();
+
+/* ============================================================
+   ABLAUF (muss normalerweise nicht verändert werden)
+   ============================================================ */
 const $ = id => document.getElementById(id);
-const NAMES = { logo:"Logo.png", syms:"Steuersymbole", logo2:"Logo2.png" };
-const SLOTNAMES = ["Oben links", "Unten links", "Unten rechts"];   /* Plätze wie im Original */
-const ORIGINAL = ["logo", "syms", "logo2"];                         /* Besetzung der Plätze im Original */
-const EP = {
-  schmal:{ W:394, H:734, label:"Hochformat schmal (394 × 734)", small:2.58,
-    slots:[{x:23.2,y:5},{x:23,y:95.1},{x:86.5,y:94.8}],
-    w:{logo:40, logo2:25, back:7, stop:9, next:7, gap:2}, imp:{x:81.1,y:98} },
-  ipad:{ W:810, H:948, label:"Hochformat iPad (810 × 948)", small:1.48,
-    slots:[{x:13,y:3.5},{x:14,y:94.8},{x:88.1,y:93.8}],
-    w:{logo:25, logo2:20, back:3.7, stop:4.94, next:3.7, gap:1.23}, imp:{x:82.4,y:97.7} }
+const bg = $("bg"), titel = $("titel"), logo = $("logo"), logo2 = $("logo2"), symGroup = $("symGroup"), impressum = $("impressum"), iconRow = $("iconRow"), creditB = $("creditB");
+const vars = p => ({
+  opacity:0, filter:`blur(${REL.blur[p.blur] * Math.min(innerWidth, innerHeight) / 100}px)`, scale:p.scale,
+  x:0, y:(p.y === "out" ? REL.moveOut : (p.y || 0)) * innerHeight / 100, rotation:0, rotationX:0,
+  transformPerspective:600, duration:p.duration, ease:p.ease,
+  ...(p.each != null ? { stagger:{ each:p.each, from:p.from } } : {}),
+  ...(p.amount != null ? { stagger:{ amount:p.amount, from:p.from } } : {})
+});
+const off = o => "out" + (o < 0 ? "-=" : "+=") + Math.abs(o);
+
+Object.assign(titel.style, { color:CFG.color, fontWeight:CFG.weight, fontFamily:CFG.font });
+bg.style.setProperty("--dim", CFG.dim);
+let split;
+function setText(t) {
+  if (split) split.revert();
+  titel.textContent = t;
+  split = new SplitText(titel, { type:"chars" });
+  return split.chars;
+}
+
+/* ---------- Navigation: Zustand, Overlay, Position ---------- */
+const navState = { t:0 }, ovState = { t:0 };   // t: 0 = oben, 1 = Bildmitte bzw. 0 = klar, 1 = stark verschwommen
+let navOpen = false, navTl = null;
+function placeNav(cfg) {
+  const nb = $("navBox");
+  if (!cfg || !cfg.nav) { nb.style.display = "none"; return; }
+  nb.style.display = "";
+  nb.style.left = (cfg.nav.x + (50 - cfg.nav.x) * navState.t) + "%";   // beim Aufklappen wandert der Schriftzug in die Bildmitte
+  nb.style.top = (cfg.nav.y + (50 - cfg.nav.y) * navState.t) + "%";
+}
+function applyOverlay() {
+  const t = ovState.t, ov = $("navOverlay");
+  const f = t > 0.001 ? `blur(${(NAV_BLUR_VMIN * Math.min(innerWidth, innerHeight) / 100 * t).toFixed(2)}px)` : "none";
+  ov.style.backdropFilter = f; ov.style.webkitBackdropFilter = f;
+  ov.style.background = `rgba(0,0,0,${(0.22 * t).toFixed(3)})`;
+}
+function placeRing() {
+  [...$("navRing").children].forEach((it, i) => {
+    const a = (-90 + i * 360 / NAV_COUNT) * Math.PI / 180;   // erstes Wurmloch oben, dann im Uhrzeigersinn
+    it.style.setProperty("--size", CFG.wormVw + "vw");
+    it.style.left = `calc(50% + ${(CFG.navR * Math.cos(a)).toFixed(3)}vmin)`;
+    it.style.top  = `calc(50% + ${(CFG.navR * Math.sin(a)).toFixed(3)}vmin)`;
+  });
+}
+
+
+/* ============================================================
+   TERMINE (Prototyp): zwölf Monatsseiten ab dem aktuellen Monat
+   ============================================================ */
+const MONATE = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const WTAG   = ["So","Mo","Di","Mi","Do","Fr","Sa"];
+/* Beispieltermine (ausgedacht): d = Tag, bis = letzter Tag bei mehrtägigen Terminen, t = Titel, z = Zeit, o = Ort */
+const TERMINE = {
+  0:[ {d:1,bis:5,t:"Weihnachtsferien"}, {d:12,t:"Elternabend Klasse 9",z:"19 Uhr",o:"Aula"}, {d:22,t:"Tag der offenen Tür",z:"10–14 Uhr"}, {d:30,t:"Zeugnisausgabe",z:"Unterrichtsende 11:45 Uhr"} ],
+  1:[ {d:2,bis:6,t:"Halbjahresferien"}, {d:13,t:"Faschingsfeier",z:"2. bis 4. Stunde"}, {d:24,t:"Infoabend zum Übertritt",z:"19 Uhr",o:"Aula"} ],
+  2:[ {d:5,t:"Premiere der Theater-AG",z:"18 Uhr",o:"Aula"}, {d:12,t:"Känguru-Wettbewerb"}, {d:20,t:"Frühjahrskonzert",z:"18 Uhr",o:"Aula"}, {d:30,bis:31,t:"Osterferien"} ],
+  3:[ {d:1,bis:10,t:"Osterferien"}, {d:21,t:"Elternsprechtag",z:"15–18 Uhr"}, {d:28,t:"Beginn der Projektwoche"} ],
+  4:[ {d:1,t:"Tag der Arbeit",z:"schulfrei"}, {d:6,t:"Fahrradprüfung Klasse 4",o:"Schulhof"}, {d:18,t:"Schulfototag"}, {d:26,bis:28,t:"Abiturprüfungen"} ],
+  5:[ {d:4,t:"Sommerfest",z:"15–20 Uhr",o:"Schulhof"}, {d:16,t:"Wandertag"}, {d:25,t:"Verabschiedung der Abschlussklassen",z:"18 Uhr",o:"Aula"} ],
+  6:[ {d:2,t:"Bundesjugendspiele",o:"Sportplatz"}, {d:9,t:"Notenkonferenz"}, {d:23,t:"Letzter Schultag",z:"Zeugnisse, 11:15 Uhr"} ],
+  7:[ {d:1,bis:31,t:"Sommerferien"} ],
+  8:[ {d:1,bis:11,t:"Sommerferien"}, {d:14,t:"Einschulung",z:"9:30 Uhr",o:"Aula"}, {d:15,t:"Erster Schultag"}, {d:28,t:"Elternabend Klasse 5",z:"19 Uhr"} ],
+  9:[ {d:3,t:"Tag der Deutschen Einheit",z:"schulfrei"}, {d:6,t:"Schülerparlament",z:"13:30 Uhr",o:"Raum 112"}, {d:8,t:"Känguru der Mathematik"}, {d:13,t:"Sporttag Klasse 5–7",o:"Sportplatz"},
+      {d:15,t:"Schulkonferenz",z:"16 Uhr"}, {d:17,t:"Elternabend Klasse 6",z:"19 Uhr",o:"Aula"}, {d:20,t:"Vorlesewettbewerb",z:"10 Uhr",o:"Bibliothek"}, {d:22,t:"Berufsinformationstag",z:"9–13 Uhr",o:"Aula"},
+      {d:24,t:"Herbstkonzert der Musik-AG",z:"18 Uhr",o:"Aula"}, {d:26,bis:30,t:"Herbstferien"} ],
+  10:[ {d:5,t:"Laternenumzug",z:"17 Uhr",o:"Schulhof"}, {d:20,t:"Vorlesetag"}, {d:27,t:"Aufbau Adventsbasar"} ],
+  11:[ {d:4,t:"Nikolaustag"}, {d:12,t:"Weihnachtsbasar",z:"14–18 Uhr",o:"Aula"}, {d:18,t:"Weihnachtskonzert",z:"18 Uhr",o:"Aula"}, {d:22,bis:31,t:"Weihnachtsferien"} ]
 };
-const PERMS = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]].map(p => p.map(i => ORIGINAL[i]));
+const esc = x => String(x).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-let ep = "schmal", assign = ORIGINAL.slice(), clampOn = false;
-const imp = { schmal:{...EP.schmal.imp}, ipad:{...EP.ipad.imp} };
-const ELS = { logo:$("eLogo"), syms:$("eSyms"), logo2:$("eLogo2") };
-const n1 = v => +(+v).toFixed(1);
+function buildMonths() {
+  const now = new Date(), out = [];
+  for (let k = 0; k < 12; k++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + k, 1), m = d.getMonth(), y = d.getFullYear();
+    out.push({ bgSrc: MONATS_BILDER[m], text: MONATE[m] + " " + y, termine: { year:y, month:m, events:(TERMINE[m] || []).slice().sort((a, b) => a.d - b.d) } });
+  }
+  return out;
+}
 
-/* Platzhalter, falls ein Bild nicht gefunden wird */
-const svg = (w, h, inner) => "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${inner}</svg>`);
-const box = t => svg(160, 100, `<rect x="2" y="2" width="156" height="96" rx="12" fill="rgba(255,255,255,.18)" stroke="#fff" stroke-width="3"/><text x="80" y="56" fill="#fff" font-family="sans-serif" font-size="18" text-anchor="middle">${t}</text>`);
-const ico = s => svg(100, 100, `<circle cx="50" cy="50" r="46" fill="rgba(255,255,255,.2)" stroke="#fff" stroke-width="4"/><text x="50" y="64" fill="#fff" font-family="sans-serif" font-size="40" text-anchor="middle">${s}</text>`);
-const PH = { iLogo:box("logo.png"), iLogo2:box("logo2.png"), iBack:ico("◀"), iStop:ico("❚❚"), iNext:ico("▶") };
-Object.keys(PH).forEach(id => {
-  const img = $(id);
-  img.onerror = () => { img.onerror = null; img.src = PH[id]; };
-  img.onload = () => layout();
+/* Baut die Terminschilder der aktuellen Monatsseite; liefert die Elemente für die Animation */
+function setTermine(slide) {
+  const box = $("terminBox");
+  box.replaceChildren(); box.classList.remove("scroll");
+  if (!slide.termine) { box.style.display = "none"; return null; }
+  const { year, month, events } = slide.termine;
+  const n = new Date(), heute = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+
+  const list = document.createElement("div"); list.className = "evList";
+  const cards = events.map(e => {
+    const wd = new Date(year, month, e.d).getDay();
+    const sub = [e.bis ? "bis " + e.bis + ". " + MONATE[month] : "", e.z || "", e.o || ""].filter(Boolean).join(" · ");
+    const c = document.createElement("article"); c.className = "evCard" + (new Date(year, month, e.bis || e.d) < heute ? " past" : ""); c.dataset.d = e.d;
+    c.innerHTML = '<div class="evDate"><small>' + WTAG[wd] + '</small><b>' + e.d + '</b></div><div class="evBody"><h3>' + esc(e.t) + '</h3>' + (sub ? '<p>' + esc(sub) + '</p>' : '') + '</div>';
+    list.append(c); return c;
+  });
+  box.append(list);
+  return { cards };
+}
+
+/* Berühren/Antippen hebt ein Terminschild hervor */
+(function () {
+  const box = $("terminBox");
+  const hl = (d, on) => box.querySelectorAll('[data-d="' + d + '"]').forEach(el => el.classList.toggle("hl", on));
+  const dOf = t => { const el = t.closest && t.closest("[data-d]"); return el ? el.dataset.d : null; };
+  box.addEventListener("mouseover", e => { const d = dOf(e.target); if (d) hl(d, true); });
+  box.addEventListener("mouseout",  e => { const d = dOf(e.target); if (d) hl(d, false); });
+  box.addEventListener("focusin",   e => { const d = dOf(e.target); if (d) hl(d, true); });
+  box.addEventListener("focusout",  e => { const d = dOf(e.target); if (d) hl(d, false); });
+  box.addEventListener("click", e => {   // Touch: Antippen schaltet um, vorherige Hervorhebung wird gelöscht
+    const d = dOf(e.target); if (!d) return;
+    const an = !box.querySelector('[data-d="' + d + '"].hl');
+    box.querySelectorAll(".hl").forEach(el => el.classList.remove("hl"));
+    if (an) hl(d, true);
+  });
+})();
+
+/* Platz zwischen Monatsname und den unteren Elementen (Logos, Steuersymbole) ausmessen */
+function placeTermin(cfg) {
+  const box = $("terminBox");
+  if (!cfg.termin || !box.firstChild) { box.style.display = "none"; return; }
+  const gap = innerHeight * 0.018;
+  const top = titel.getBoundingClientRect().bottom + gap;
+  let bottom = innerHeight;
+  [symGroup, $("iconBox"), $("creditBox"), logo, logo2].forEach(e => { const r = e.getBoundingClientRect(); if (r.width && r.top > top) bottom = Math.min(bottom, r.top); });
+  const avail = Math.max(80, bottom - gap - top);
+  box.style.display = "flex";
+  box.style.width = CFG.termW + "vw";   // Breite der Terminliste, stetig überblendet (Hochformat: 90 vw schmal, 60 vw iPad)
+  box.style.top = top + "px";
+  box.style.maxHeight = avail + "px";
+  box.classList.toggle("scroll", box.scrollHeight > avail + 1);
+}
+
+/* Zweite Zeile "weitere Informationen" mit Symbol und der aufklappbare Infotext */
+let splitMore, splitInfo, infoTween = null;
+function setMore(slide) {
+  if (infoTween) { infoTween.kill(); infoTween = null; }
+  if (splitMore) { splitMore.revert(); splitMore = null; }
+  if (splitInfo) { splitInfo.revert(); splitInfo = null; }
+  const btn = $("moreBtn"), wrap = $("moreWrap");
+  btn.setAttribute("aria-expanded", "false"); $("infoText").setAttribute("aria-hidden", "true");
+  if (!slide.info) { wrap.style.display = "none"; return { more:[], info:[] }; }
+  wrap.style.display = "";
+  $("moreText").textContent = CFG.moreText;
+  $("infoText").textContent = slide.info;
+  splitMore = new SplitText($("moreText"), { type:"words,chars" });
+  splitInfo = new SplitText($("infoText"), { type:"words,chars" });
+  gsap.set(splitInfo.chars, { opacity:0 });
+  return { more:[...splitMore.chars, $("chev")], info:splitInfo.chars };
+}
+
+function placeLogo(img, box, c) {
+  if (!c) { img.style.display = "none"; return; }
+  img.style.display = "";
+  img.style.width = c.width + "vw";
+  img.style.background = c.plate ? "#fff" : "none";
+  img.style.padding = c.plate ? "0.9vw" : "0";
+  img.style.borderRadius = c.plate ? "0.8vw" : "0";
+  box.style.left = c.x + "%"; box.style.top = c.y + "%";
+}
+
+function placeSyms(c) {
+  const box = $("symbole");
+  if (!c) { box.style.display = "none"; return; }
+  box.style.display = "";
+  box.style.left = c.x + "%"; box.style.top = c.y + "%"; symGroup.style.gap = c.gap + "vw";
+  $("symZurueck").style.width = c.back + "vw"; $("symStopp").style.width = c.stop + "vw"; $("symVor").style.width = c.next + "vw";
+}
+
+/* Impressum: gleiche Höhe wie der Bildnachweis, waagerecht mittig unter logo2.png */
+function placeImpressum(cfg) {
+  if (!(cfg.logo2 && cfg.impressum && cfg.syms)) return;
+  const box = $("symbole"), sw = document.querySelector(".stopwrap");
+  const gap = parseFloat(getComputedStyle($("credit")).marginTop) || 0;
+  const top = box.offsetTop - box.offsetHeight / 2 + sw.offsetTop + sw.offsetHeight + gap;   // = Oberkante des Bildnachweises
+  $("impBox").style.top = top + "px";
+  $("impBox").style.left = `calc(${cfg.logo2.x}% + ${cfg.impressumDx || 0}vw)`;
+}
+
+/* Nur Hochformat: sechs Symbole (3 x 2) rechts neben den Steuersymbolen, Bildnachweis zentriert unten */
+function placeIcons(cfg, port) {
+  const ib = $("iconBox"), cb = $("creditBox"), I = CFG.icon;
+  const show = !!(port && cfg.syms && I);
+  ib.style.display = cb.style.display = show ? "" : "none";
+  $("credit").style.display = show ? "none" : "";   // Querformat: Bildnachweis wie bisher unter dem Stopp-Symbol
+  if (!show) return;
+  const r = document.documentElement.style;
+  r.setProperty("--ivw", I.vw); r.setProperty("--icell", I.cell); r.setProperty("--igap", I.gap);
+  ib.style.left = I.x + "%"; ib.style.top = I.y + "%";
+  cb.style.left = "50%"; cb.style.top = CFG.creditY + "%";
+}
+
+/* Wendet alle Größen und Positionen an (auch live durch die Regler) */
+function layout(cfg) {
+  const root = document.documentElement.style;
+  titel.style.fontSize = CFG.fontVw + "vw";
+  root.setProperty("--small", CFG.smallVw + "vw");
+  root.setProperty("--more", CFG.moreVw); root.setProperty("--info", CFG.infoVw); root.setProperty("--infow", CFG.infoW);
+  root.setProperty("--cgap", REL.creditGap);
+  $("textBox").style.left = cfg.textPos.x + "%"; $("textBox").style.top = cfg.textPos.y + "%";
+  const PORT = profileName() === "port";
+  placeLogo(logo,  $("logoBox"),  PORT ? null : cfg.logo);   // Hochformat: logo.png entfällt
+  placeLogo(logo2, $("logoBox2"), cfg.logo2);
+  placeSyms(cfg.syms);
+  impressum.style.display = (!PORT && cfg.logo2 && cfg.impressum) ? "" : "none";   // Hochformat: Text "Impressum" entfällt
+  if (!PORT) placeImpressum(cfg);
+  placeIcons(cfg, PORT);
+  root.setProperty("--nav", CFG.navVw);
+  placeNav(cfg); placeRing(); applyOverlay(); placeTermin(cfg);
+}
+
+function buildTimeline(cfg, chars) {
+  const tl = gsap.timeline();
+  tl.from(bg, vars(cfg.bg.in), cfg.bg.in.at);
+  tl.from(chars, vars(cfg.textIn), cfg.textIn.at);
+  if (cur.more.length) tl.from(cur.more, vars(cfg.moreIn), cfg.moreIn.at);
+  if (cur.termin) tl.from(cur.termin.cards, vars(cfg.cardsIn), cfg.cardsIn.at);
+  if (cfg.nav)   tl.from($("navBtn"), vars(cfg.nav.in), cfg.nav.in.at);
+  if (cfg.logo)  tl.from(logo,  vars(cfg.logo.in),  cfg.logo.in.at);
+  if (cfg.logo2) tl.from(logo2, vars(cfg.logo2.in), cfg.logo2.in.at);
+  if (cfg.syms)  tl.from([symGroup, iconRow, creditB], vars(cfg.syms.in), cfg.syms.in.at);
+  if (cfg.logo2 && cfg.impressum) tl.from(impressum, vars(cfg.logo2.in), cfg.logo2.in.at);
+  tl.addLabel("hold");
+  if (cfg.termin) tl.call(() => { if (!termineAuto) setPaused(true); });   // Termine: Seite bleibt stehen, bis Play gedrückt wird
+  tl.to({}, { duration:cfg.hold });
+  tl.addLabel("out");
+  addOut(tl, cfg, chars);
+  return tl;
+}
+
+/* Ausblenden des aktuellen Bildschirms (Label "out" muss in tl existieren) */
+function addOut(tl, cfg, chars) {
+  tl.to(chars, vars(cfg.textOut), off(cfg.textOut.offset));
+  if (cur.more.length) tl.to(cur.more, vars(cfg.textOut), off(cfg.textOut.offset));
+  if (cur.termin) tl.to(cur.termin.cards, vars(cfg.terminOut), off(cfg.terminOut.offset));
+  if (cur.info.length) tl.to(cur.info, vars(INFO_OUT), off(INFO_OUT.offset));   // falls der Infotext gerade aufgeklappt ist
+  if (cfg.logo)  tl.to(logo,  vars(cfg.logo.out),  off(cfg.logo.out.offset));
+  if (cfg.logo2) tl.to(logo2, vars(cfg.logo2.out), off(cfg.logo2.out.offset));
+  if (cfg.nav)  tl.to($("navBtn"), vars(cfg.nav.out), off(cfg.nav.out.offset));
+  if (cfg.syms) tl.to([symGroup, iconRow, creditB], vars(cfg.syms.out), off(cfg.syms.out.offset));
+  if (cfg.logo2 && cfg.impressum) tl.to(impressum, vars(cfg.logo2.out), off(cfg.logo2.out.offset));
+  tl.to(bg, vars(cfg.bg.out), off(cfg.bg.out.offset));
+}
+
+let run = 0, tl, active, nextCall, cur, stopped = false, paused = false, navigating = false;
+let mode = "loop", termineAuto = false, navPrevAuto = false;   // Termine: automatisches Weiterblättern nur nach Klick auf Play
+function playRun() {
+  closeNav(true);   // falls die Navigation noch offen ist
+  const intro = run === 0, cfg = intro ? CFG.intro : CFG[mode];
+  const slide = intro ? cfg : cfg.slides[(run - 1) % cfg.slides.length];
+  if (tl) tl.kill();
+  gsap.set([bg, logo, logo2, symGroup, iconRow, creditB, impressum, $("chev"), $("navBtn")], { clearProps:"opacity,filter,transform" });
+  const chars = setText(slide.text);
+  const extra = setMore(intro ? {} : slide);
+  const termin = setTermine(intro ? {} : slide);
+  bg.style.backgroundImage = `url("${slide.bgSrc}")`;
+  $("credit").textContent = $("creditB").textContent = slide.credit ? `© ${slide.credit.name} (${slide.credit.klasse})` : "";
+  layout(cfg);
+  cur = { cfg, chars, more:extra.more, info:extra.info, termin };
+  tl = buildTimeline(cfg, chars);
+  active = tl;
+  /* Erst jetzt sichtbar schalten: die Startwerte (Deckkraft 0) sind bereits gesetzt */
+  document.querySelectorAll(".stage > .abs").forEach(e => e.style.visibility = "visible");
+  tl.eventCallback("onComplete", () => { if (stopped) return; run++; nextCall = gsap.delayedCall(cfg.pauseAfter, playRun); });
+}
+
+/* ---------- Klick auf das Wurmloch ----------
+   Der aktuelle Bildschirm blendet sofort aus (wie beim normalen Ausblenden),
+   gleichzeitig wird dynamisch in den Kern des Wurmlochs gezoomt. Danach: Blackscreen. */
+const ZOOM_SCALE = 60;      // Endvergrößerung beim Zoom
+const ZOOM_TIME  = 1.8;     // Dauer des Zooms in Sekunden
+const ZOOM_EASE  = "power3.in";
+
+/* Nach dem Zoom: garantiert nichts mehr von der vorherigen Seite sichtbar */
+function blackout() {
+  document.querySelectorAll(".stage > .abs").forEach(e => e.style.visibility = "hidden");
+  $("navRing").style.visibility = "hidden";
+  bg.style.opacity = 0;
+  $("terminBox").style.display = "none";
+}
+
+/* ---------- Steuerung: Zurück / Stopp / Vor ---------- */
+function setPaused(p) {
+  paused = p;
+  if (mode === "termine") termineAuto = !p;   // Play = automatisch weiterblättern, Stopp = manuell
+  if (active) active.paused(p);
+  if (nextCall) nextCall.paused(p);
+  $("symStopp").src = p ? "play.png" : "Stopp.png";          // angehalten: Play-Symbol, sonst Stopp-Symbol
+  $("btnStopp").setAttribute("aria-label", p ? "Fortsetzen" : "Stopp");
+}
+function controlsReady() {   // nur ab dem Karussell und solange die Symbole sichtbar sind
+  return !stopped && !navigating && !navOpen && run !== 0 && cur && cur.cfg.syms && gsap.getProperty(symGroup, "opacity") >= 0.3;
+}
+function navigate(delta) {
+  if (!controlsReady()) return;
+  navigating = true;
+  const n = CFG[mode].slides.length;
+  const next = (((run - 1) % n) + delta + n) % n;
+  const keepAuto = termineAuto;
+  setPaused(false); termineAuto = keepAuto;   // Vor/Zurück ändern die Einstellung Play/Stopp nicht
+  if (nextCall) nextCall.kill();
+  if (infoTween) infoTween.kill();
+  tl.kill();
+  // aktuelle Seite sofort ausblenden, danach die nächste/vorherige einleiten
+  const ex = gsap.timeline({ onComplete: () => { navigating = false; run = next + 1; playRun(); } });
+  active = ex;
+  ex.addLabel("out");
+  addOut(ex, cur.cfg, cur.chars);
+}
+function moreReady() {   // nur solange die Seite eingeblendet ist und noch nicht ausblendet
+  return !stopped && !navigating && !navOpen && run !== 0 && cur && cur.more.length && active === tl && tl.time() < tl.labels.out
+    && gsap.getProperty(cur.more[0], "opacity") >= 0.3;
+}
+$("moreBtn").addEventListener("click", () => {
+  if (!moreReady()) return;
+  const btn = $("moreBtn"), open = btn.getAttribute("aria-expanded") === "true";
+  if (infoTween) infoTween.kill();
+  btn.setAttribute("aria-expanded", String(!open)); $("infoText").setAttribute("aria-hidden", String(open));
+  if (!open) {
+    setPaused(true);   // Karussell anhalten, weiter geht es nur über das Play-Symbol
+    const { duration, ease, stagger, ...start } = vars(INFO_IN);
+    infoTween = gsap.fromTo(cur.info, start, { opacity:1, filter:"blur(0px)", scale:1, x:0, y:0, duration, ease, stagger });
+  } else {
+    infoTween = gsap.to(cur.info, vars(INFO_OUT));
+  }
+});
+/* ---------- Navigation auf-/zuklappen ---------- */
+function navReady() {   // nur solange die Seite eingeblendet ist und noch nicht ausblendet
+  return !stopped && !navigating && run !== 0 && cur && cur.cfg.nav && active === tl && tl.time() < tl.labels.out
+    && gsap.getProperty($("navBtn"), "opacity") >= 0.3;
+}
+function openNav() {
+  navOpen = true; navPrevAuto = termineAuto;
+  setPaused(true);   // 1) Animation pausieren; weiter nur über Play
+  $("navBtn").setAttribute("aria-expanded", "true");
+  $("navRing").style.visibility = "visible"; $("navRing").classList.add("open"); $("navOverlay").classList.add("on");
+  navTl.eventCallback("onReverseComplete", null);
+  navTl.timeScale(1).play();   // 2) Unschärfe + 3) Schriftzug zur Mitte, danach 4) Wurmlöcher
+}
+function closeNav(instant) {
+  if (!navOpen) return;
+  navOpen = false;
+  $("navBtn").setAttribute("aria-expanded", "false");
+  $("navRing").classList.remove("open"); $("navOverlay").classList.remove("on");
+  const fin = () => { $("navRing").style.visibility = "hidden"; };
+  if (instant) { navTl.pause().progress(0); navState.t = 0; ovState.t = 0; applyOverlay(); placeNav(cur && cur.cfg); fin(); }
+  else { navTl.eventCallback("onReverseComplete", () => {
+      fin();
+      if (stopped) return;
+      setPaused(false);
+      if (mode === "termine") {   // Termine: vorherigen Zustand wiederherstellen (stehen bleiben, falls Play nicht aktiv war)
+        termineAuto = navPrevAuto;
+        if (!termineAuto && tl && tl.time() >= tl.labels.hold) setPaused(true);
+      }
+    }); navTl.timeScale(1.6).reverse(); }   // alles stetig rückwärts, danach läuft das Karussell weiter
+}
+$("navBtn").addEventListener("click", () => { if (navOpen) closeNav(); else if (navReady()) openNav(); });
+$("navOverlay").addEventListener("click", () => closeNav());
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeNav(); });
+
+/* Platzhalter: Blackscreen nach dem Zoom. Hier später den Ziel-Bildschirm des Wurmlochs i starten (0 bis 5, im Uhrzeigersinn ab oben) */
+function onNavWormholeEnd(i) { if (NAV_SIGNS[i][0] === "termine") startTermine(); }
+
+/* Navigations-Ring nach einem Zoom wieder in den Ausgangszustand versetzen */
+function ringReset() {
+  const ring = $("navRing");
+  ring.style.zIndex = ""; ring.style.visibility = "hidden"; ring.classList.remove("open");
+  ring.querySelectorAll(".nwInner").forEach(e => { gsap.set(e, { clearProps:"all" }); e.style.display = ""; });
+  navTl.eventCallback("onReverseComplete", null);
+  navTl.pause().timeScale(1).progress(0);
+  navState.t = 0; ovState.t = 0; applyOverlay();
+}
+/* Klick auf das Termine-Wurmloch: zwölf Monatsseiten, gesteuert über Zurück / Stopp-Play / Vor */
+function startTermine() {
+  ringReset();
+  mode = "termine";
+  CFG.termine.slides = buildMonths();   // zwölf Monate ab dem aktuellen Monat
+  active = null; nextCall = null; tl = null;
+  stopped = false; navigating = false;
+  setPaused(false); termineAuto = false;   // beginnt angehalten: Play (Symbol) blättert automatisch weiter
+  run = 1; playRun();
+}
+
+/* Zoom in ein Wurmloch des Navigations-Rings (gleiche Logik wie bei den Wurmlöchern oben) */
+function diveFromNav(i, w, portal) {
+  if (stopped || navigating || !navOpen || run === 0) return;
+  if (gsap.getProperty(w, "opacity") < 0.3) return;   // nur klickbar, wenn sichtbar
+  stopped = true; navOpen = false;
+  setPaused(false);   // zuerst, solange die Animationen noch leben ...
+  if (infoTween) infoTween.kill();
+  if (nextCall) nextCall.kill();
+  active.kill();      // ... und erst danach endgültig beenden
+  const ring = $("navRing");
+  ring.classList.remove("open"); ring.style.zIndex = 101;   // zoomendes Wurmloch über allem
+  $("navOverlay").classList.remove("on");
+  $("navBtn").setAttribute("aria-expanded", "false");
+  if (/blur\(0(px)?\)/.test(w.style.filter)) w.style.filter = "none";
+
+  // Kern des Wurmlochs auf dem Bildschirm (Kern liegt bei 50,3 % / 48,7 %)
+  const r = portal.getBoundingClientRect();
+  const dx = innerWidth  / 2 - (r.left + r.width  * 0.503);
+  const dy = innerHeight / 2 - (r.top  + r.height * 0.487);
+
+  // 1) alles andere blendet sofort aus: Bildschirm, Navigation, die übrigen Wurmlöcher
+  const others = [...ring.querySelectorAll(".nwInner")].filter(e => e !== w);
+  const ex = gsap.timeline();
+  ex.addLabel("out");
+  addOut(ex, cur.cfg, cur.chars);
+  ex.to(others, vars(LOGO_OUT(0)), off(0));
+
+  // 2) gleichzeitig: Flug in den Kern des Wurmlochs
+  const z = gsap.timeline({ onComplete: () => {
+    w.style.display = "none";
+    blackout();
+    ovState.t = 0; applyOverlay();
+    onNavWormholeEnd(i);
+  } });
+  z.to(w, { x: gsap.getProperty(w, "x") + dx, y: gsap.getProperty(w, "y") + dy, scale: ZOOM_SCALE, duration: ZOOM_TIME, ease: ZOOM_EASE }, 0)
+   .to(w, { opacity: 0, duration: 0.5, ease: "power1.in" }, ZOOM_TIME - 0.5);
+}
+
+/* Ring aus NAV_COUNT Kopien des Wurmlochs aufbauen und die Ein-/Ausblend-Zeitleiste vorbereiten */
+(function buildRing() {
+  const ring = $("navRing");
+  for (let i = 0; i < NAV_COUNT; i++) {
+    const item = document.createElement("div"); item.className = "navWorm";
+    const copy = $("wormTpl").content.firstElementChild.cloneNode(true);
+    copy.removeAttribute("id"); copy.classList.add("nwInner");
+    copy.querySelectorAll("[id]").forEach(e => e.removeAttribute("id"));
+    const portal = copy.querySelector(".portal");
+    const [signFile, signName, signScale] = NAV_SIGNS[i];
+    item.style.setProperty("--sign-img", `url("schild-${signFile}.png")`);
+    item.style.setProperty("--sign", (0.7 * signScale).toFixed(3));   // Breite des Schilds relativ zum Wurmloch (Standard 0,7)
+    copy.querySelector(".sign").setAttribute("aria-label", signName);
+    portal.setAttribute("aria-label", signName + " – Wurmloch betreten");
+    portal.addEventListener("click", () => diveFromNav(i, copy, portal));
+    item.append(copy); ring.append(item);
+  }
+  placeRing();
+  const items = [...ring.querySelectorAll(".nwInner")];
+  navTl = gsap.timeline({ paused:true });
+  navTl.to(ovState,  { t:1, duration:0.9, ease:"power1.inOut", onUpdate:applyOverlay }, 0);
+  navTl.to(navState, { t:1, duration:0.9, ease:"power2.inOut", onUpdate:() => placeNav(cur && cur.cfg) }, 0);
+  navTl.from(items, vars(NAV_IN), 0.9);   // erst wenn der Schriftzug in der Mitte angekommen ist
+})();
+
+window.addEventListener("resize", () => {
+  if (!cur) return;
+  applyProfile(); layout(cur.cfg);   // Werte stetig an das neue Seitenverhältnis anpassen
+});
+$("btnVor").addEventListener("click", () => navigate(1));
+$("btnZurueck").addEventListener("click", () => navigate(-1));
+$("btnStopp").addEventListener("click", () => { if (controlsReady()) setPaused(!paused); });
+
+/* Hochformat-Symbole: Ziele hier eintragen, z. B. "tel:+49...", "mailto:...", "impressum.html". Leer = Symbol tut noch nichts. */
+const ICON_LINKS = { telefon:"", email:"", adresse:"", iserv:"", foerderverein:"", impressum:"" };
+iconRow.addEventListener("click", e => {
+  const a = e.target.closest && e.target.closest("[data-k]");
+  if (!a) return;
+  e.preventDefault();
+  if (stopped || gsap.getProperty(iconRow, "opacity") < 0.3) return;
+  const url = ICON_LINKS[a.dataset.k];
+  if (url) location.href = url;
 });
 
-function layout() {
-  const E = EP[ep], vw = E.W / 100;
-  const stage = $("stage");
-  stage.style.width = E.W + "px"; stage.style.height = E.H + "px";
-  stage.style.setProperty("--small", E.small * vw + "px");
-  const wd = (id, v) => $(id).style.width = v * vw + "px";
-  wd("iLogo", E.w.logo); wd("iLogo2", E.w.logo2); wd("iBack", E.w.back); wd("iStop", E.w.stop); wd("iNext", E.w.next);
-  document.querySelector(".sg").style.gap = E.w.gap * vw + "px";
-  assign.forEach((k, i) => {
-    const el = ELS[k], s = E.slots[i];
-    let x = s.x * vw, y = s.y * E.H / 100;
-    if (clampOn) {
-      const w = el.offsetWidth, h = el.offsetHeight;
-      x = Math.min(Math.max(x, w / 2), E.W - w / 2);
-      y = Math.min(Math.max(y, h / 2), E.H - h / 2);
+/* Impressum: Ziel später hier eintragen, z. B. "impressum.html" */
+const IMPRESSUM_URL = "";
+impressum.addEventListener("click", e => {
+  e.preventDefault();
+  if (stopped || gsap.getProperty(impressum, "opacity") < 0.3) return;
+  if (IMPRESSUM_URL) location.href = IMPRESSUM_URL;
+});
+
+/* Bilder vorladen und fehlende Dateien anzeigen */
+const files = ["Zurueck.png", "Stopp.png", "play.png", "Vor.png", "logo.png", "logo2.png", "telefon.svg", "email.svg", "adresse.svg", "iserv.svg", "foerderverein.svg", "impressum-datenschutz.svg", "wurmloch-news.png", ...NAV_SIGNS.map(x => "schild-" + x[0] + ".png"), CFG.intro.bgSrc, ...CFG.loop.slides.map(x => x.bgSrc), ...new Set(MONATS_BILDER)];
+const missing = [];
+let pending = files.length;
+files.forEach(f => {
+  const i = new Image();
+  i.onerror = () => { missing.push(f); done(); };
+  i.onload = done;
+  i.src = f;
+});
+function done() {
+  if (--pending) return;
+  if (missing.length) { const n = $("fehlt"); n.style.display = "block"; n.textContent = "Datei nicht gefunden: " + missing.join(", "); }
+  playRun();
+}
+</script>
+<script>
+/* Wurmloch: Drehung, Glühwürmchen und Klick-Reise (aus wurmloch-news-final.html) */
+(function(){
+  var SPIN_SECONDS = 40;      /* Drehdauer einer vollen Umdrehung */
+  var CLOCKWISE    = false;   /* false = gegen den Uhrzeigersinn */
+  var FIREFLY_SPEED = 4;      /* Glühwürmchen-Tempo (1 = Standard) */
+  var FIREFLY_COUNT = 6;      /* Anzahl sichtbarer Glühwürmchen (0-6) */
+
+  var bodies=[],orbits=[];
+  Array.prototype.forEach.call(document.querySelectorAll('.portal'),function(p){   /* Haupt-Wurmloch und alle Kopien im Navigations-Ring */
+    bodies.push(p.querySelector('.body'));
+    Array.prototype.forEach.call(p.querySelectorAll('.orbit'),function(el,i){
+      var t=parseFloat(el.style.getPropertyValue('--t')),d=parseFloat(el.style.getPropertyValue('--dly'))||0;
+      var dir=el.style.getPropertyValue('--dir').trim()==='normal'?1:-1;
+      if(i>=FIREFLY_COUNT)el.style.display='none';
+      orbits.push({el:el,t:t,dir:dir,ang:dir*(((-d/t)*360)%360)});
+    });
+  });
+
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  var spinDir=CLOCKWISE?1:-1,bodyAng=0,last=null;
+  (function tick(ts){
+    if(last!==null){
+      var dt=Math.min((ts-last)/1000,0.1);
+      bodyAng=(bodyAng+spinDir*dt*360/SPIN_SECONDS)%360;
+      for(var b=0;b<bodies.length;b++)bodies[b].style.rotate=bodyAng+'deg';
+      for(var i=0;i<orbits.length;i++){
+        var o=orbits[i];
+        o.ang=(o.ang+o.dir*dt*360*FIREFLY_SPEED/o.t)%360;
+        o.el.style.rotate=o.ang+'deg';
+      }
     }
-    el.style.left = x + "px"; el.style.top = y + "px";
-  });
-  const p = imp[ep], im = $("imp");
-  im.style.left = p.x * vw + "px"; im.style.top = p.y * E.H / 100 + "px";
-  fit(); ui();
-}
-
-let scale = 1;
-function fit() {
-  const E = EP[ep], narrow = innerWidth <= 780;
-  const availW = narrow ? innerWidth - 24 : innerWidth - 24 - 320 - 20;
-  const availH = narrow ? innerHeight * 0.72 : innerHeight - 24;
-  scale = Math.min(availW / E.W, availH / E.H, 1.5);
-  $("stage").style.transform = "scale(" + scale + ")";
-  $("frame").style.width = E.W * scale + "px"; $("frame").style.height = E.H * scale + "px";
-}
-
-function ui() {
-  document.querySelectorAll("#epSeg button").forEach(b => b.classList.toggle("on", b.dataset.ep === ep));
-  [...$("slots").querySelectorAll("select")].forEach((s, i) => s.value = assign[i]);
-  const p = imp[ep];
-  $("rx").value = $("nx").value = n1(p.x); $("ry").value = $("ny").value = n1(p.y);
-  $("clamp").checked = clampOn;
-  let t = "";
-  Object.keys(EP).forEach(k => {
-    const E = EP[k];
-    t += E.label + "\n";
-    ["logo", "syms", "logo2"].forEach(key => { const s = E.slots[assign.indexOf(key)]; t += NAMES[key] + ": x " + n1(s.x) + ", y " + n1(s.y) + "\n"; });
-    t += "Impressum: x " + n1(imp[k].x) + ", y " + n1(imp[k].y) + "\n\n";
-  });
-  $("out").textContent = t.trim();
-}
-
-/* Auswahlfelder: Wer ein Element auf einen Platz legt, tauscht mit dem bisherigen Besitzer */
-SLOTNAMES.forEach((name, i) => {
-  const row = document.createElement("div"); row.className = "row";
-  row.innerHTML = '<label>' + name + '</label><select>' + Object.keys(NAMES).map(k => '<option value="' + k + '">' + NAMES[k] + '</option>').join("") + '</select>';
-  row.querySelector("select").onchange = e => {
-    const j = assign.indexOf(e.target.value);
-    [assign[i], assign[j]] = [assign[j], assign[i]];
-    layout();
-  };
-  $("slots").appendChild(row);
-});
-$("next").onclick = () => {
-  const cur = PERMS.findIndex(p => p.every((k, i) => k === assign[i]));
-  assign = PERMS[(cur + 1) % PERMS.length].slice(); layout();
-};
-$("orig").onclick = () => { assign = ORIGINAL.slice(); layout(); };
-$("clamp").onchange = e => { clampOn = e.target.checked; layout(); };
-document.querySelectorAll("#epSeg button").forEach(b => b.onclick = () => { ep = b.dataset.ep; layout(); });
-
-/* Impressum: Regler, Zahlenfelder und Ziehen im Bild */
-const setImp = (x, y) => {
-  imp[ep].x = Math.min(100, Math.max(0, x)); imp[ep].y = Math.min(100, Math.max(0, y)); layout();
-};
-["rx", "nx"].forEach(id => $(id).oninput = e => setImp(parseFloat(e.target.value) || 0, imp[ep].y));
-["ry", "ny"].forEach(id => $(id).oninput = e => setImp(imp[ep].x, parseFloat(e.target.value) || 0));
-$("impReset").onclick = () => { imp[ep] = { ...EP[ep].imp }; layout(); };
-const im = $("imp");
-im.onclick = e => e.preventDefault();
-im.onpointerdown = e => { e.preventDefault(); im.setPointerCapture(e.pointerId); im.classList.add("drag"); };
-im.onpointermove = e => {
-  if (!im.hasPointerCapture(e.pointerId)) return;
-  const r = $("frame").getBoundingClientRect();
-  setImp((e.clientX - r.left) / r.width * 100, (e.clientY - r.top) / r.height * 100);
-};
-im.onpointerup = im.onpointercancel = e => { im.classList.remove("drag"); };
-
-$("copy").onclick = async () => {
-  try { await navigator.clipboard.writeText($("out").textContent); $("copy").textContent = "Kopiert"; }
-  catch (err) { const r = document.createRange(); r.selectNodeContents($("out")); getSelection().removeAllRanges(); getSelection().addRange(r); $("copy").textContent = "Markiert – bitte kopieren"; }
-  setTimeout(() => $("copy").textContent = "Kopieren", 1800);
-};
-addEventListener("resize", () => { fit(); });
-layout();
+    last=ts;
+    requestAnimationFrame(tick);
+  })(performance.now());
+})();
 </script>
 </body>
 </html>
