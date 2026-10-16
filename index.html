@@ -14,7 +14,7 @@
 /* Intro-Bild: immer die webp-Version des aktuellen Monats (Dateien klein geschrieben). Zusammen mit logo2.png wird es sofort mit hoher Priorität geladen, alles andere erst danach (siehe unten "Bilder vorladen"). */
 const INTRO_BILDER = ["januar.webp","februar.webp","märz.webp","april.webp","mai.webp","juni.webp","juli.webp","august.webp","september.webp","oktober.webp","november.webp","dezember.webp"];
 const INTRO_BILD = INTRO_BILDER[new Date().getMonth()];
-[INTRO_BILD, "logo2.png"].forEach(f => { const l = document.createElement("link"); l.rel = "preload"; l.as = "image"; l.href = f; l.fetchPriority = "high"; document.head.appendChild(l); });
+[INTRO_BILD, "logo2.png", "Vor.png"].forEach(f => { const l = document.createElement("link"); l.rel = "preload"; l.as = "image"; l.href = f; l.fetchPriority = "high"; document.head.appendChild(l); });
 </script>
 <style>
   html, body { margin:0; height:100%; background:#111; overflow:hidden; }
@@ -102,6 +102,7 @@ const INTRO_BILD = INTRO_BILDER[new Date().getMonth()];
 
   /* ---------- Steuer-Symbole unten in der Bildmitte ---------- */
   #symbole { z-index:6; }
+  #skipBox { z-index:6; }   /* Intro: Vor-Symbol unten rechts, überspringt das Intro */
   #symGroup { display:flex; align-items:center; }
   #impBox { transform:translateX(-50%); z-index:7; font:400 var(--small, 0.8vw)/1.2 system-ui, sans-serif; }   /* eigene Ebene, unabhängig von den Logo-Grenzen */
   .impressum { display:block; pointer-events:auto; cursor:pointer; white-space:nowrap; color:#fff; text-decoration:none;
@@ -154,6 +155,7 @@ const INTRO_BILD = INTRO_BILDER[new Date().getMonth()];
   <div id="bg"></div>
   <div id="logoBox" class="abs"><img id="logo" class="logo" src="logo.png" alt="Logo"></div>
   <div id="logoBox2" class="abs"><img id="logo2" class="logo" src="logo2.png" alt="Logo 2"></div>
+  <div id="skipBox" class="abs"><button class="sbtn" id="btnSkip" type="button" aria-label="Intro überspringen"><img id="symSkip" src="Vor.png" alt=""></button></div>
   <template id="wormTpl"><div>
     <button class="portal" aria-label="News – Wurmloch betreten">
       <span class="body"><span class="img"></span><span class="glow"></span></span>
@@ -313,7 +315,9 @@ const CFG = {
     textPos:{ x:50, y:30 },
     textIn:{ at:1, blur:"in", scale:1.4, duration:1.5, ease:"power2.out", each:0.15, from:"start" }, textOut:TXT_OUT,
     logo:  null,   // logo.png ist im ersten Durchlauf nicht sichtbar
-    logo2: { x:50, y:50, width:0, plate:false, in:{ at:3.75, blur:"in", scale:1.4, duration:2, ease:"power1.in" }, out:LOGO_OUT(0.15) }
+    logo2: { x:50, y:50, width:0, plate:false, in:{ at:3.75, blur:"in", scale:1.4, duration:2, ease:"power1.in" }, out:LOGO_OUT(0.15) },
+    // Vor-Symbol unten rechts: erscheint zusammen mit der Willkommensschrift (at = textIn.at), Klick überspringt das Intro; x, y, width kommen aus dem Profil
+    skip:  { x:0, y:0, width:0, in:{ at:1, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) }
   },
 
   /* ---------- ab 2. Durchlauf: Schleife (endlos) ---------- */
@@ -402,6 +406,8 @@ function applyProfile() {
   L.syms.x = P.loop.syms.x;      L.syms.y = P.loop.syms.y;
   L.syms.gap = P.gap; L.syms.back = P.back; L.syms.stop = P.stop; L.syms.next = P.next;
   L.impressumDx = P.impressumDx;
+  const skipEdge = P.iconEdge != null ? P.iconEdge : 3;   // Randabstand rechts in vw (Hochformat wie die Symbolzeile, Querformat 3 vw)
+  I.skip.width = P.next; I.skip.x = 100 - skipEdge - P.next / 2; I.skip.y = P.iconY != null ? P.iconY : 93;
   if (P.iconSz != null) {   // nur Hochformat: 3 Steuersymbole (links) | 6 Symbole (rechts), alle gleich groß in einer Zeile
     const sz = P.iconSz, g = P.iconIn, E = P.iconEdge;
     const ctrlW = 3 * sz + 2 * g, icoW = 6 * sz + 5 * g, G = 100 - 2 * E - ctrlW - icoW;   // G = Abstand zwischen den Gruppen
@@ -580,6 +586,14 @@ function placeLogo(img, box, c) {
   box.style.left = c.x + "%"; box.style.top = c.y + "%";
 }
 
+function placeSkip(c) {
+  const box = $("skipBox");
+  if (!c) { box.style.display = "none"; return; }
+  box.style.display = "";
+  box.style.left = c.x + "%"; box.style.top = c.y + "%";
+  $("symSkip").style.width = c.width + "vw";
+}
+
 function placeSyms(c) {
   const box = $("symbole");
   if (!c) { box.style.display = "none"; return; }
@@ -625,6 +639,7 @@ function layout(cfg) {
   placeLogo(logo2, $("logoBox2"), cfg.logo2);
   logo2.style.cursor = (mode !== "loop" && run !== 0) ? "pointer" : "";   // logo2.png führt zurück zum Hauptkarussell
   placeSyms(cfg.syms);
+  placeSkip(cfg.skip);
   impressum.style.display = (!PORT && cfg.logo2 && cfg.impressum) ? "" : "none";   // Hochformat: Text "Impressum" entfällt
   if (!PORT) placeImpressum(cfg);
   placeIcons(cfg, PORT);
@@ -641,6 +656,7 @@ function buildTimeline(cfg, chars) {
   if (cfg.logo)  tl.from(logo,  vars(cfg.logo.in),  cfg.logo.in.at);
   if (cfg.logo2) tl.from(logo2, vars(cfg.logo2.in), cfg.logo2.in.at);
   if (cfg.syms)  tl.from([symGroup, iconRow, creditB], vars(cfg.syms.in), cfg.syms.in.at);
+  if (cfg.skip)  tl.from($("symSkip"), vars(cfg.skip.in), cfg.skip.in.at);
   if (cfg.logo2 && cfg.impressum) tl.from(impressum, vars(cfg.logo2.in), cfg.logo2.in.at);
   tl.addLabel("hold");
   if (cfg.termin) tl.call(() => { if (!termineAuto) setPaused(true); });   // Termine: Seite bleibt stehen, bis Play gedrückt wird
@@ -659,6 +675,7 @@ function addOut(tl, cfg, chars) {
   if (cfg.logo2) tl.to(logo2, vars(cfg.logo2.out), off(cfg.logo2.out.offset));
   if (cfg.nav)  tl.to($("navBtn"), vars(cfg.nav.out), off(cfg.nav.out.offset));
   if (cfg.syms) tl.to([symGroup, iconRow, creditB], vars(cfg.syms.out), off(cfg.syms.out.offset));
+  if (cfg.skip) tl.to($("symSkip"), vars(cfg.skip.out), off(cfg.skip.out.offset));
   if (cfg.logo2 && cfg.impressum) tl.to(impressum, vars(cfg.logo2.out), off(cfg.logo2.out.offset));
   tl.to(bg, vars(cfg.bg.out), off(cfg.bg.out.offset));
 }
@@ -670,7 +687,7 @@ function playRun() {
   const intro = run === 0, cfg = intro ? CFG.intro : CFG[mode];
   const slide = intro ? cfg : cfg.slides[(run - 1) % cfg.slides.length];
   if (tl) tl.kill();
-  gsap.set([bg, logo, logo2, symGroup, iconRow, creditB, impressum, $("chev"), $("navBtn")], { clearProps:"opacity,filter,transform" });
+  gsap.set([bg, logo, logo2, symGroup, iconRow, creditB, impressum, $("chev"), $("navBtn"), $("symSkip")], { clearProps:"opacity,filter,transform" });
   const titleChars = setText(slide.text);
   const extra = setMore(intro ? {} : slide);
   const chars = [...titleChars, ...extra.more];   // das Aufklapp-Symbol erscheint als letztes "Zeichen" der Überschrift und blendet mit ihr aus
@@ -845,6 +862,24 @@ function startHauptkarussell() {
 }
 logo2.addEventListener("click", startHauptkarussell);
 
+/* Klick auf das Vor-Symbol im Intro: das Intro blendet sofort aus, danach startet das Hauptkarussell (wartet ggf. kurz, bis alles geladen ist) */
+function skipIntro() {
+  if (stopped || navigating || run !== 0 || !cur) return;
+  if (gsap.getProperty($("symSkip"), "opacity") < 0.3) return;   // nur klickbar, wenn sichtbar
+  navigating = true;
+  if (nextCall) nextCall.kill();
+  tl.kill();
+  const ex = gsap.timeline({ onComplete: () => {
+    navigating = false;
+    const go = () => { run = 1; playRun(); };
+    if (!loopReady) afterLoopReady = go; else go();
+  } });
+  active = ex;
+  ex.addLabel("out");
+  addOut(ex, cur.cfg, cur.chars);
+}
+$("btnSkip").addEventListener("click", skipIntro);
+
 /* Zoom in ein Wurmloch des Navigations-Rings (gleiche Logik wie bei den Wurmlöchern oben) */
 function diveFromNav(i, w, portal) {
   if (stopped || navigating || !navOpen || run === 0) return;
@@ -947,10 +982,10 @@ impressum.addEventListener("click", e => {
 });
 
 /* Bilder vorladen in drei Stufen, damit die Seite sofort startet:
-   Stufe 1: nur die beiden Intro-Bilder (Monats-webp + logo2.png) mit hoher Priorität → das Intro startet, sobald sie da sind.
+   Stufe 1: nur die Intro-Bilder (Monats-webp, logo2.png, Vor.png) mit hoher Priorität → das Intro startet, sobald sie da sind.
    Stufe 2: alles, was die Schleife braucht, lädt WÄHREND der Intro-Animation. Ist es beim Ende des Intros noch nicht fertig, wartet der Ablauf kurz darauf.
    Stufe 3: die übrigen Monatsbilder (nur für die Termine-Seiten) laden danach mit niedriger Priorität im Hintergrund. */
-const INTRO_FILES = [CFG.intro.bgSrc, "logo2.png"];
+const INTRO_FILES = [CFG.intro.bgSrc, "logo2.png", "Vor.png"];
 const LOOP_FILES = ["Zurueck.png", "Stopp.png", "play.png", "Vor.png", "logo.png", "telefon.svg", "email.svg", "adresse.svg", "iserv.svg", "foerderverein.svg", "impressum-datenschutz.svg", "menu-icon.svg", "wurmloch-news.png",
   ...NAV_SIGNS.map(x => "schild-" + x[0] + ".png"), ...CFG.loop.slides.map(x => x.bgSrc)].filter(f => !INTRO_FILES.includes(f));
 const MONTH_FILES = [...new Set(MONATS_BILDER)].filter(f => !INTRO_FILES.includes(f) && !LOOP_FILES.includes(f));
