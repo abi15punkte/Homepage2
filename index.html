@@ -359,6 +359,9 @@ const RECHT_BILD = MONATS_BILDER[new Date().getMonth()];   // Platzhalter: bis e
 const RECHT_CFG = Object.create(CFG.loop);
 Object.assign(RECHT_CFG, {
   fontScalePort: 0.8,   // Hochformat: Überschrift etwas kleiner, damit auch "Datenschutzbeauftragter" in eine Zeile passt
+  /* Überschrift doppelt so schnell wie in der Schleife (nur Impressum-Karussell): Dauer und Staffelabstand je halbiert, Startzeitpunkt (at) bleibt */
+  textIn:  { ...CFG.loop.textIn,  duration: CFG.loop.textIn.duration / 2,  each: CFG.loop.textIn.each / 2 },
+  textOut: { ...CFG.loop.textOut, duration: CFG.loop.textOut.duration / 2, each: CFG.loop.textOut.each / 2 },
   slides: [
     { bgSrc:RECHT_BILD, text:"Verantwortlichkeit", infoHtml:
       '<p>Angaben nach § 5 DDG<br>GGS Astrid-Lindgren-Schule mit Montessori-Zweig<br>Aakerfährstraße 80, 47058 Duisburg</p>' +
@@ -562,9 +565,9 @@ function setMore(slide) {
   if (!slide.info && !slide.infoHtml) { wrap.style.display = "none"; btn.style.display = "none"; return { more:[], info:[] }; }
   wrap.style.display = ""; btn.style.display = "";
   if (slide.infoHtml) $("infoText").innerHTML = slide.infoHtml; else $("infoText").textContent = slide.info;
-  splitInfo = new SplitText($("infoText"), { type:"words,chars", charsClass:"ic" });
-  gsap.set(splitInfo.chars, { opacity:0 });
-  return { more:[$("chev")], info:splitInfo.chars };
+  splitInfo = new SplitText($("infoText"), { type:"words", wordsClass:"ic" });   // nur nach Wörtern (statt Zeichen): deutlich weniger Elemente mit Blur
+  gsap.set(splitInfo.words, { opacity:0 });
+  return { more:[$("chev")], info:splitInfo.words };
 }
 
 function placeLogo(img, box, c) {
