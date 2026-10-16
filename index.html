@@ -96,23 +96,11 @@
 
   #fehlt { position:fixed; left:8px; bottom:8px; z-index:9; font:12px system-ui, sans-serif; background:#fff3cd; color:#664d03; padding:6px 8px; border-radius:6px; display:none; }
 
-  /* ---------- Termine: Tagesband mit Leuchtpunkten + Terminschilder ---------- */
+  /* ---------- Termine: Terminschilder ---------- */
   #terminBox { position:absolute; left:50%; transform:translateX(-50%); z-index:3; display:none; flex-direction:column; gap:calc(var(--info, 1.5) * .8vw);
     width:74vw; color:#fff; font:400 calc(var(--info, 1.5) * 1vw)/1.3 system-ui, sans-serif; scrollbar-width:none; }
   #terminBox.scroll { overflow-y:auto; }
   #terminBox::-webkit-scrollbar { display:none; }
-  .dayStrip { display:grid; grid-template-columns:repeat(var(--n, 30), 1fr); align-items:end; padding:0 .2em; text-shadow:0 .06em .3em rgba(0,0,0,.9); }
-  .dc { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:.3em; height:3.1em; padding:0; margin:0; border:0; background:none; color:inherit; font:inherit; cursor:default; }
-  .dc::before { content:""; width:1px; height:.85em; background:rgba(255,255,255,.55); }
-  .dc.we::before { height:.5em; opacity:.5; }
-  .dc.rng { background:linear-gradient(to top, rgba(150,180,255,.30), rgba(150,180,255,0)); }
-  .dc b { font-weight:500; font-size:.68em; line-height:1; letter-spacing:-.04em; opacity:0; }
-  .dc.ev { cursor:pointer; }
-  .dc.ev::before { width:.62em; height:.62em; border-radius:50%; background:#fff6c4; box-shadow:0 0 .6em .18em rgba(255,232,140,.85); animation:flug 3.2s ease-in-out var(--dl, 0s) infinite alternate; }
-  .dc.ev b, .dc.first b, .dc.last b { opacity:.9; }
-  .dc.today::after { content:""; position:absolute; bottom:-.15em; left:50%; width:1.35em; height:1.35em; margin-left:-.675em; border:1px solid rgba(255,255,255,.9); border-radius:50%; }
-  .dc.ev.hl::before { background:#fff; box-shadow:0 0 .9em .35em rgba(255,240,170,1); transform:scale(1.35); animation:none; }
-  @keyframes flug { to { transform:translateY(-.28em); box-shadow:0 0 .35em .08em rgba(255,232,140,.55); } }
   .evList { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, calc(var(--info, 1.5) * 19vw)), 1fr)); gap:calc(var(--info, 1.5) * .6vw); }
   .evCard { display:flex; align-items:stretch; gap:.75em; padding:.55em .8em .55em .6em; border-radius:.8em; border:1px solid rgba(255,255,255,.24);
     background:linear-gradient(135deg, rgba(12,18,32,.58), rgba(12,18,32,.36)); box-shadow:0 .3em 1.2em rgba(0,0,0,.28); }
@@ -306,8 +294,7 @@ Object.assign(TERMIN_CFG, {
   termin: true,
   slides: [],   // wird beim Start der Termine-Seiten aus dem aktuellen Datum aufgebaut (siehe startTermine)
   hold: 9, pauseAfter: 0.3,   // Wartezeit nur beim automatischen Weiterblättern (Play)
-  terminIn:  { at:1.0, blur:"in",  scale:1.25, duration:1,   ease:"power2.out" },                                  // Tagesband
-  cardsIn:   { at:1.3, blur:"in",  scale:1.2,  duration:1,   ease:"power2.out", each:0.12, from:"start" },        // Terminschilder
+  cardsIn:   { at:1.0, blur:"in",  scale:1.2,  duration:1,   ease:"power2.out", each:0.12, from:"start" },        // Terminschilder
   terminOut: { blur:"out", scale:1, y:"out", duration:0.5, ease:"power2.in", each:0.05, from:"end", offset:0 }
 });
 CFG.termine = TERMIN_CFG;
@@ -415,28 +402,14 @@ function buildMonths() {
   return out;
 }
 
-/* Baut Tagesband und Terminschilder der aktuellen Monatsseite; liefert die Elemente für die Animation */
+/* Baut die Terminschilder der aktuellen Monatsseite; liefert die Elemente für die Animation */
 function setTermine(slide) {
   const box = $("terminBox");
   box.replaceChildren(); box.classList.remove("scroll");
   if (!slide.termine) { box.style.display = "none"; return null; }
   const { year, month, events } = slide.termine;
-  const days = new Date(year, month + 1, 0).getDate();
   const n = new Date(), heute = new Date(n.getFullYear(), n.getMonth(), n.getDate());
 
-  const strip = document.createElement("div"); strip.className = "dayStrip"; strip.style.setProperty("--n", days);
-  for (let d = 1; d <= days; d++) {
-    const wd = new Date(year, month, d).getDay();
-    const start = events.some(e => e.d === d);
-    const range = events.some(e => e.bis && d >= e.d && d <= e.bis);
-    const cell = document.createElement(start ? "button" : "span");
-    if (start) { cell.type = "button"; cell.dataset.d = d; }
-    cell.className = "dc" + (wd === 0 || wd === 6 ? " we" : "") + (start ? " ev" : "") + (range ? " rng" : "") + (d === 1 ? " first" : "") + (d === days ? " last" : "")
-      + (+heute === +new Date(year, month, d) ? " today" : "");
-    cell.style.setProperty("--dl", ((d * 0.37) % 3).toFixed(2) + "s");
-    cell.innerHTML = "<b>" + d + "</b>";
-    strip.append(cell);
-  }
   const list = document.createElement("div"); list.className = "evList";
   const cards = events.map(e => {
     const wd = new Date(year, month, e.d).getDay();
@@ -445,11 +418,11 @@ function setTermine(slide) {
     c.innerHTML = '<div class="evDate"><small>' + WTAG[wd] + '</small><b>' + e.d + '</b></div><div class="evBody"><h3>' + esc(e.t) + '</h3>' + (sub ? '<p>' + esc(sub) + '</p>' : '') + '</div>';
     list.append(c); return c;
   });
-  box.append(strip, list);
-  return { strip, cards };
+  box.append(list);
+  return { cards };
 }
 
-/* Zusammenspiel von Leuchtpunkt und Terminschild: Berühren/Antippen hebt beide hervor */
+/* Berühren/Antippen hebt ein Terminschild hervor */
 (function () {
   const box = $("terminBox");
   const hl = (d, on) => box.querySelectorAll('[data-d="' + d + '"]').forEach(el => el.classList.toggle("hl", on));
@@ -550,7 +523,7 @@ function buildTimeline(cfg, chars) {
   tl.from(bg, vars(cfg.bg.in), cfg.bg.in.at);
   tl.from(chars, vars(cfg.textIn), cfg.textIn.at);
   if (cur.more.length) tl.from(cur.more, vars(cfg.moreIn), cfg.moreIn.at);
-  if (cur.termin) { tl.from(cur.termin.strip, vars(cfg.terminIn), cfg.terminIn.at); tl.from(cur.termin.cards, vars(cfg.cardsIn), cfg.cardsIn.at); }
+  if (cur.termin) tl.from(cur.termin.cards, vars(cfg.cardsIn), cfg.cardsIn.at);
   if (cfg.nav)   tl.from($("navBtn"), vars(cfg.nav.in), cfg.nav.in.at);
   if (cfg.logo)  tl.from(logo,  vars(cfg.logo.in),  cfg.logo.in.at);
   if (cfg.logo2) tl.from(logo2, vars(cfg.logo2.in), cfg.logo2.in.at);
@@ -568,7 +541,7 @@ function buildTimeline(cfg, chars) {
 function addOut(tl, cfg, chars) {
   tl.to(chars, vars(cfg.textOut), off(cfg.textOut.offset));
   if (cur.more.length) tl.to(cur.more, vars(cfg.textOut), off(cfg.textOut.offset));
-  if (cur.termin) tl.to([cur.termin.strip, ...cur.termin.cards], vars(cfg.terminOut), off(cfg.terminOut.offset));
+  if (cur.termin) tl.to(cur.termin.cards, vars(cfg.terminOut), off(cfg.terminOut.offset));
   if (cur.info.length) tl.to(cur.info, vars(INFO_OUT), off(INFO_OUT.offset));   // falls der Infotext gerade aufgeklappt ist
   if (cfg.logo)  tl.to(logo,  vars(cfg.logo.out),  off(cfg.logo.out.offset));
   if (cfg.logo2) tl.to(logo2, vars(cfg.logo2.out), off(cfg.logo2.out.offset));
