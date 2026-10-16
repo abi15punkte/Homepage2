@@ -40,6 +40,12 @@
   .more:focus-visible { outline:2px solid #8fa4ff; outline-offset:2px; border-radius:6px; }
   #infoText { margin:.5em 0 0; width:calc(var(--infow, 60) * 1vw); max-width:94vw; text-align:center; color:#fff; font:400 calc(var(--info, 1.6) * 1vw)/1.45 system-ui, sans-serif;
     text-shadow:0 .06em .35em rgba(0,0,0,.9); pointer-events:none; white-space:normal; }
+  #infoText p { margin:0 0 .7em; }
+  #infoText p:last-child { margin-bottom:0; }
+  #infoText strong { font-weight:600; }
+  #infoText .src { font-size:.85em; opacity:.8; }
+  #infoText a { color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.85); pointer-events:auto; cursor:pointer; }   /* Links (Telefon, E-Mail) sind nur anklickbar, solange der Text aufgeklappt ist (zugeklappt: inert) */
+  #infoText a:focus-visible { outline:2px solid #8fa4ff; outline-offset:2px; border-radius:3px; }
 
   /* ---------- Navigation (oben mittig, klappt zur Bildmitte auf) ---------- */
   #navBox { z-index:100; font-size:calc(var(--nav, 2) * 1vw); }   /* höchste Ebene */
@@ -172,7 +178,7 @@
   <div id="textBox" class="abs"><h1 id="titel"></h1>
     <div id="moreWrap">
       <button class="more" id="moreBtn" type="button" aria-expanded="false" aria-controls="infoText"><span id="moreText"></span><span class="chev"><svg id="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg></span></button>
-      <div id="infoText" aria-hidden="true"></div>
+      <div id="infoText" aria-hidden="true" inert></div>
     </div>
   </div>
   <div id="navBox" class="abs">
@@ -340,6 +346,38 @@ Object.assign(TERMIN_CFG, {
 });
 CFG.termine = TERMIN_CFG;
 
+/* Impressum & Datenschutz: eigenes Karussell mit fünf Abschnitten (Entwurf: impressum-entwurf.html).
+   text = Überschrift (sofort sichtbar), infoHtml = restlicher Inhalt des Abschnitts (klappt über "weitere Informationen" auf).
+   Positionen, Effekte, Zeiten und Steuerung wie die Schleife (erbt von CFG.loop). */
+const RECHT_BILD = MONATS_BILDER[new Date().getMonth()];   // Platzhalter: bis es eigene Bilder gibt, zeigt jeder Abschnitt das Bild des aktuellen Monats (später je Abschnitt bgSrc ersetzen)
+const RECHT_CFG = Object.create(CFG.loop);
+Object.assign(RECHT_CFG, {
+  fontScalePort: 0.8,   // Hochformat: Überschrift etwas kleiner, damit auch "Datenschutzbeauftragter" in eine Zeile passt
+  slides: [
+    { bgSrc:RECHT_BILD, text:"Verantwortlichkeit", infoHtml:
+      '<p>Angaben nach § 5 DDG<br>GGS Astrid-Lindgren-Schule mit Montessori-Zweig<br>Aakerfährstraße 80, 47058 Duisburg</p>' +
+      '<p>Telefon <a href="tel:+49203332667">0203 332667</a><br>E-Mail <a href="mailto:GGS.AstridLindgrenSchule@stadt-duisburg.de">GGS.AstridLindgrenSchule@stadt-duisburg.de</a></p>' +
+      '<p>Verantwortlich für Inhalt, Texte und Fotos sowie Verantwortliche im Sinne der DSGVO (Art. 4 Nr. 7): Astrid Niermann, Rektorin.</p>' },
+    { bgSrc:RECHT_BILD, text:"Datenschutzbeauftragter", infoHtml:
+      '<p>Herr Tenner<br>Europaschule Krupp-Gymnasium<br>Flutweg 62, 47228 Duisburg<br><a href="mailto:k.tenner@stadt-duisburg.de">k.tenner@stadt-duisburg.de</a></p>' },
+    { bgSrc:RECHT_BILD, text:"Datenverarbeitung", infoHtml:
+      '<p><strong>Aufruf der Website:</strong> Aus technischen Gründen speichert unser Hoster Strato bis zu sechs Monate Logdateien mit IP-Adresse, Zeitpunkt, abgerufener Seite, Statuscode, Datenmenge, Referrer, Browser, Betriebssystem und Sprache.</p>' +
+      '<p><strong>Kontakt per E-Mail oder Telefon:</strong> Ihre freiwillig mitgeteilten Daten (z. B. E-Mail-Adresse, Name, Telefonnummer) verwenden wir nur für Ihr Anliegen und löschen sie, sobald sie nicht mehr erforderlich sind.</p>' +
+      '<p><strong>Rechtsgrundlage</strong> für beides: Art. 6 Abs. 1 S. 1 lit. e, Abs. 3 DSGVO i. V. m. § 3 Abs. 1 DSG NRW.</p>' +
+      '<p>Wir setzen keine Cookies und keine Analyse- oder Tracking-Dienste ein. Die Schriftarten laden wir von unserem eigenen Server.</p>' },
+    { bgSrc:RECHT_BILD, text:"Ihre Rechte", infoHtml:
+      '<p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerspruch und Datenübertragbarkeit (Art. 15 bis 18, 20, 21 DSGVO).</p>' +
+      '<p>Beschwerden richten Sie an die Landesbeauftragte für Datenschutz und Informationsfreiheit NRW, Postfach 20 04 44, 40102 Düsseldorf, Telefon 0211 38424-0, <a href="mailto:poststelle@ldi.nrw.de">poststelle@ldi.nrw.de</a>.</p>' },
+    { bgSrc:RECHT_BILD, text:"Haftung und Urheberrecht", infoHtml:
+      '<p><strong>Inhalte:</strong> Wir erstellen die Inhalte mit Sorgfalt, übernehmen aber keine Gewähr für Richtigkeit, Vollständigkeit und Aktualität (insbesondere der Termine). Für eigene Inhalte haften wir nach den allgemeinen Gesetzen (§ 7 Abs. 1 DDG); fremde Informationen müssen wir nach §§ 8 bis 10 DDG nicht überwachen.</p>' +
+      '<p><strong>Links:</strong> Auf Inhalte verlinkter Seiten Dritter haben wir keinen Einfluss und übernehmen dafür keine Gewähr. Deren Betreiber können Daten der Besucher erheben.</p>' +
+      '<p><strong>Urheberrecht:</strong> Von uns erstellte Inhalte unterliegen dem deutschen Urheberrecht. Eine Nutzung außerhalb seiner Grenzen braucht die schriftliche Zustimmung des Urhebers, Kopien sind nur privat und nicht kommerziell erlaubt. Inhalte Dritter kennzeichnen wir.</p>' +
+      '<p>Eine Haftung ist erst ab Kenntnis einer konkreten Rechtsverletzung möglich. Auf Hinweise hin entfernen wir Inhalte und Links umgehend.</p>' +
+      '<p class="src">Quelle des Haftungsausschlusses: eRecht24.de</p>' }
+  ]
+});
+CFG.rechtliches = RECHT_CFG;
+
 /* Überträgt das passende Profil (Quer- oder Hochformat) in CFG und REL */
 function applyProfile() {
   const P = profileValues();
@@ -385,7 +423,7 @@ let split;
 function setText(t) {
   if (split) split.revert();
   titel.textContent = t;
-  split = new SplitText(titel, { type:"chars" });
+  split = new SplitText(titel, { type:"words,chars" });
   return split.chars;
 }
 
@@ -515,11 +553,11 @@ function setMore(slide) {
   if (splitMore) { splitMore.revert(); splitMore = null; }
   if (splitInfo) { splitInfo.revert(); splitInfo = null; }
   const btn = $("moreBtn"), wrap = $("moreWrap");
-  btn.setAttribute("aria-expanded", "false"); $("infoText").setAttribute("aria-hidden", "true");
-  if (!slide.info) { wrap.style.display = "none"; return { more:[], info:[] }; }
+  btn.setAttribute("aria-expanded", "false"); $("infoText").setAttribute("aria-hidden", "true"); $("infoText").inert = true;
+  if (!slide.info && !slide.infoHtml) { wrap.style.display = "none"; return { more:[], info:[] }; }
   wrap.style.display = "";
   $("moreText").textContent = CFG.moreText;
-  $("infoText").textContent = slide.info;
+  if (slide.infoHtml) $("infoText").innerHTML = slide.infoHtml; else $("infoText").textContent = slide.info;
   splitMore = new SplitText($("moreText"), { type:"words,chars" });
   splitInfo = new SplitText($("infoText"), { type:"words,chars" });
   gsap.set(splitInfo.chars, { opacity:0 });
@@ -571,7 +609,7 @@ function placeIcons(cfg, port) {
 /* Wendet alle Größen und Positionen an (auch live durch die Regler) */
 function layout(cfg) {
   const root = document.documentElement.style;
-  titel.style.fontSize = CFG.fontVw + "vw";
+  titel.style.fontSize = CFG.fontVw * ((profileName() === "port" && cfg.fontScalePort) || 1) + "vw";
   root.setProperty("--small", CFG.smallVw + "vw");
   root.setProperty("--more", CFG.moreVw); root.setProperty("--info", CFG.infoVw); root.setProperty("--infow", CFG.infoW);
   root.setProperty("--cgap", REL.creditGap);
@@ -697,7 +735,7 @@ $("moreBtn").addEventListener("click", () => {
   if (!moreReady()) return;
   const btn = $("moreBtn"), open = btn.getAttribute("aria-expanded") === "true";
   if (infoTween) infoTween.kill();
-  btn.setAttribute("aria-expanded", String(!open)); $("infoText").setAttribute("aria-hidden", String(open));
+  btn.setAttribute("aria-expanded", String(!open)); $("infoText").setAttribute("aria-hidden", String(open)); $("infoText").inert = open;
   if (!open) {
     setPaused(true);   // Karussell anhalten, weiter geht es nur über das Play-Symbol
     const { duration, ease, stagger, ...start } = vars(INFO_IN);
@@ -761,6 +799,24 @@ function startTermine() {
   stopped = false; navigating = false;
   setPaused(false); termineAuto = false;   // beginnt angehalten: Play (Symbol) blättert automatisch weiter
   run = 1; playRun();
+}
+
+/* Klick auf "Impressum" bzw. das Impressum-Symbol: aktuelle Seite blendet aus, danach läuft das Karussell mit den fünf Abschnitten */
+function startRechtliches() {
+  if (stopped || navigating || navOpen || run === 0 || !cur || mode === "rechtliches") return;
+  navigating = true;
+  if (nextCall) nextCall.kill();
+  if (infoTween) infoTween.kill();
+  tl.kill();
+  const ex = gsap.timeline({ onComplete: () => {
+    navigating = false;
+    mode = "rechtliches"; termineAuto = false;
+    setPaused(false);   // läuft wie das normale Karussell von selbst weiter
+    run = 1; playRun();
+  } });
+  active = ex;
+  ex.addLabel("out");
+  addOut(ex, cur.cfg, cur.chars);
 }
 
 /* Zoom in ein Wurmloch des Navigations-Rings (gleiche Logik wie bei den Wurmlöchern oben) */
@@ -834,7 +890,7 @@ $("btnVor").addEventListener("click", () => navigate(1));
 $("btnZurueck").addEventListener("click", () => navigate(-1));
 $("btnStopp").addEventListener("click", () => { if (controlsReady()) setPaused(!paused); });
 
-/* Hochformat-Symbole: Ziele hier eintragen, z. B. "tel:+49...", "mailto:...", "impressum.html". Leer = Symbol tut noch nichts. */
+/* Hochformat-Symbole: Ziele hier eintragen, z. B. "tel:+49...", "mailto:...", "impressum.html". Leer = Symbol tut noch nichts. "impressum" öffnet das Impressum-Karussell. */
 const ICON_LINKS = {
   telefon:"tel:+49203332667",
   email:"mailto:GGS.AstridLindgrenSchule@stadt-duisburg.de",
@@ -848,18 +904,18 @@ iconRow.addEventListener("click", e => {
   if (!a) return;
   e.preventDefault();
   if (stopped || gsap.getProperty(iconRow, "opacity") < 0.3) return;
+  if (a.dataset.k === "impressum") { startRechtliches(); return; }   // öffnet das Impressum-Karussell
   const url = ICON_LINKS[a.dataset.k];
   if (!url) return;
   if (/^https?:/.test(url)) window.open(url, "_blank", "noopener");   // Maps und IServ in neuem Tab, die Seite läuft weiter
   else location.href = url;   // tel: / mailto:
 });
 
-/* Impressum: Ziel später hier eintragen, z. B. "impressum.html" */
-const IMPRESSUM_URL = "";
+/* Impressum (Querformat): öffnet das Impressum-Karussell */
 impressum.addEventListener("click", e => {
   e.preventDefault();
   if (stopped || gsap.getProperty(impressum, "opacity") < 0.3) return;
-  if (IMPRESSUM_URL) location.href = IMPRESSUM_URL;
+  startRechtliches();
 });
 
 /* Bilder vorladen in drei Stufen, damit die Seite sofort startet:
