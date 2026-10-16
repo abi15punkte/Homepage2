@@ -152,14 +152,14 @@ const INTRO_BILD = INTRO_BILDER[new Date().getMonth()];
   #adj { position:fixed; left:6px; top:calc(6px + env(safe-area-inset-top, 0px)); z-index:1000; width:min(300px, calc(100vw - 12px)); max-height:calc(100vh - 24px); overflow-y:auto; overscroll-behavior:contain; box-sizing:border-box; padding:8px 10px; border-radius:10px;
     background:rgba(20,20,28,.82); color:#fff; font:12px/1.3 system-ui, sans-serif; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
   #adj h2 { margin:0; font:600 12px/1.3 system-ui, sans-serif; display:flex; justify-content:space-between; cursor:grab; user-select:none; touch-action:none; padding:4px 0; }
-  #adj .body { margin-top:6px; }
+  #adj #adjBody { margin-top:6px; }
   #adj .row { display:grid; grid-template-columns:92px 1fr 46px; gap:6px; align-items:center; margin:3px 0; }
   #adj input[type=range] { width:100%; margin:0; }
   #adj output { text-align:right; font-variant-numeric:tabular-nums; }
   #adj .btns { display:flex; gap:6px; margin-top:6px; }
   #adj button { flex:1; padding:5px 6px; border:0; border-radius:6px; background:#3a4a8a; color:#fff; font:inherit; cursor:pointer; }
   #adj textarea { width:100%; height:64px; margin-top:6px; box-sizing:border-box; font:11px/1.3 ui-monospace, monospace; background:#0d0d14; color:#cfe; border:0; border-radius:6px; padding:4px; resize:none; }
-  #adj.min .body { display:none; }
+  #adj.min #adjBody { display:none; }
 </style>
 </head>
 <body>
@@ -1031,7 +1031,7 @@ loadFiles(INTRO_FILES, "high", () => {
   })(performance.now());
 })();
 </script>
-<div id="adj"><h2 id="adjHead"><span>Intro justieren (Prototyp)</span><span id="adjTog">–</span></h2><div class="body" id="adjBody"></div></div>
+<div id="adj"><h2 id="adjHead"><span>Intro justieren (Prototyp)</span><span id="adjTog">–</span></h2><div id="adjBody"></div></div>
 <script>
 /* PROTOTYP: Regler für Größe und Position von Logo2 und Überschrift im Intro. Werte gelten für die aktuelle Fenstergröße; beim Ändern der Fenstergröße
    werden Regler und Intro wieder auf die Werte der Stützstellen (ANCHORS) zurückgesetzt. */
