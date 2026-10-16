@@ -232,7 +232,7 @@ const ANCHORS = {
       fontVw:8.10, infoVw:3.80, infoW:88, navVw:4.45, termW:90, navX:80, navY:5.2, navR:30, logoVw:40.00, logo2Vw:35.00, introLogo2Vw:40.00, wormVw:20.00,
       back:7.00, stop:9.00, next:7.00, gap:2.00, smallVw:2.58,
       creditGap:-0.18, impressumDx:-5.40,
-      iconSz:7.57, iconIn:1.0, iconEdge:3.0, iconY:95, creditY:98.6,   // alle 9 Symbole in einer Zeile: Symbolbreite, Abstand innerhalb einer Gruppe, Randabstand links/rechts (vw, der Abstand zwischen den Gruppen ergibt sich daraus); Zeile y in %; Bildnachweis y in %
+      iconSz:7.57, iconIn:1.0, iconEdge:3.0, iconY:96, creditY:98.6,   // alle 9 Symbole in einer Zeile: Symbolbreite, Abstand innerhalb einer Gruppe, Randabstand links/rechts (vw, der Abstand zwischen den Gruppen ergibt sich daraus); Zeile y in %; Bildnachweis y in %
       moveOut:-2.72, blurIn:3.81, blurOut:3.05, blurBgIn:3.81, blurBgOut:5.08,
       intro:{ text:{x:50, y:29.9}, logo2:{x:50, y:40.2} },
       loop: { text:{x:50, y:13.9}, logo:{x:23.2, y:5}, logo2:{x:20, y:5}, syms:{x:19.5, y:88.8} }
@@ -241,7 +241,7 @@ const ANCHORS = {
       fontVw:7.00, infoVw:2.40, infoW:84, navVw:3.20, termW:60, navX:88.6, navY:3.5, navR:30, logoVw:25.00, logo2Vw:25.00, introLogo2Vw:40.00, wormVw:14.00,
       back:3.70, stop:4.94, next:3.70, gap:1.23, smallVw:1.48,
       creditGap:0, impressumDx:-5.70,
-      iconSz:5.46, iconIn:1.2, iconEdge:2.5, iconY:95, creditY:98.6,
+      iconSz:5.46, iconIn:1.2, iconEdge:2.5, iconY:96, creditY:98.6,
       moveOut:-2.11, blurIn:1.85, blurOut:1.48, blurBgIn:1.85, blurBgOut:2.47,
       intro:{ text:{x:50, y:30}, logo2:{x:50, y:44.8} },
       loop: { text:{x:50, y:17.9}, logo:{x:13, y:3.5}, logo2:{x:15, y:6}, syms:{x:14, y:89.3} }
@@ -614,6 +614,7 @@ function layout(cfg) {
   const PORT = profileName() === "port";
   placeLogo(logo,  $("logoBox"),  PORT ? null : cfg.logo);   // Hochformat: logo.png entfällt
   placeLogo(logo2, $("logoBox2"), cfg.logo2);
+  logo2.style.cursor = (mode !== "loop" && run !== 0) ? "pointer" : "";   // logo2.png führt zurück zum Hauptkarussell
   placeSyms(cfg.syms);
   impressum.style.display = (!PORT && cfg.logo2 && cfg.impressum) ? "" : "none";   // Hochformat: Text "Impressum" entfällt
   if (!PORT) placeImpressum(cfg);
@@ -814,6 +815,26 @@ function startRechtliches() {
   ex.addLabel("out");
   addOut(ex, cur.cfg, cur.chars);
 }
+
+/* Klick auf logo2.png: aktuelle Seite blendet aus, danach läuft wieder das Hauptkarussell (Schleife) */
+function startHauptkarussell() {
+  if (stopped || navigating || navOpen || run === 0 || !cur || mode === "loop") return;
+  if (gsap.getProperty(logo2, "opacity") < 0.3) return;   // nur klickbar, wenn sichtbar
+  navigating = true;
+  if (nextCall) nextCall.kill();
+  if (infoTween) infoTween.kill();
+  tl.kill();
+  const ex = gsap.timeline({ onComplete: () => {
+    navigating = false;
+    mode = "loop"; termineAuto = false;
+    setPaused(false);
+    run = 1; playRun();
+  } });
+  active = ex;
+  ex.addLabel("out");
+  addOut(ex, cur.cfg, cur.chars);
+}
+logo2.addEventListener("click", startHauptkarussell);
 
 /* Zoom in ein Wurmloch des Navigations-Rings (gleiche Logik wie bei den Wurmlöchern oben) */
 function diveFromNav(i, w, portal) {
