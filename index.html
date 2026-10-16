@@ -353,7 +353,7 @@ function applyProfile() {
     const ctrlW = 3 * sz + 2 * g, icoW = 6 * sz + 5 * g, G = 100 - 2 * E - ctrlW - icoW;   // G = Abstand zwischen den Gruppen
     L.syms.back = L.syms.stop = L.syms.next = sz; L.syms.gap = g;
     L.syms.x = E + ctrlW / 2; L.syms.y = P.iconY;   // Steuersymbole am linken Rand
-    CFG.icon = { sz, gap:g, grp:G, x:100 - E - icoW / 2, y:P.iconY }; CFG.creditY = P.creditY;   // sechs Symbole am rechten Rand
+    CFG.icon = { sz, gap:g, grp:G, edge:E, x:100 - E - icoW / 2, y:P.iconY }; CFG.creditY = P.creditY;   // sechs Symbole am rechten Rand
   }
 }
 applyProfile();
@@ -550,7 +550,8 @@ function placeIcons(cfg, port) {
   const r = document.documentElement.style;
   r.setProperty("--ivw", I.sz); r.setProperty("--igap", I.gap);
   ib.style.left = I.x + "%"; ib.style.top = I.y + "%";
-  cb.style.left = "50%"; cb.style.top = CFG.creditY + "%";
+  cb.style.left = I.edge + "vw"; cb.style.top = CFG.creditY + "%";   // Bildnachweis linksbündig, bündig mit den Steuersymbolen
+  cb.style.transform = "translate(0, -50%)"; cb.style.textAlign = "left";
 }
 
 /* Wendet alle Größen und Positionen an (auch live durch die Regler) */
