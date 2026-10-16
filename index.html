@@ -31,6 +31,10 @@
   .more:hover:not([aria-expanded="true"]) .chev { transform:translateY(.15em); }
   .more[aria-expanded="true"] .chev { transform:rotate(180deg); }
   #navBtn img { display:block; width:1.6em; height:1.6em; filter:drop-shadow(0 .06em .2em rgba(0,0,0,.85)); user-select:none; -webkit-user-drag:none; }   /* Menü-Symbol statt Schriftzug "Navigation" */
+  #navBtn .navTxt, #navBtn .chev { display:none; }   /* geschlossen: nur das Menü-Symbol */
+  #navBtn[aria-expanded="true"] .icMenu { display:none; }   /* geöffnet: Schriftzug "Navigation" mit Pfeil wie zuvor */
+  #navBtn[aria-expanded="true"] .navTxt { display:inline; }
+  #navBtn[aria-expanded="true"] .chev { display:inline-flex; }
   .more:focus-visible { outline:2px solid #8fa4ff; outline-offset:2px; border-radius:6px; }
   #infoText { margin:.5em 0 0; width:calc(var(--infow, 60) * 1vw); max-width:94vw; text-align:center; color:#fff; font:400 calc(var(--info, 1.6) * 1vw)/1.45 system-ui, sans-serif;
     text-shadow:0 .06em .35em rgba(0,0,0,.9); pointer-events:none; white-space:normal; }
@@ -170,7 +174,7 @@
     </div>
   </div>
   <div id="navBox" class="abs">
-    <button class="more" id="navBtn" type="button" aria-label="Navigation" aria-expanded="false" aria-controls="navRing"><img src="menu-icon.svg" alt=""></button>
+    <button class="more" id="navBtn" type="button" aria-label="Navigation" aria-expanded="false" aria-controls="navRing"><img class="icMenu" src="menu-icon.svg" alt=""><span class="navTxt">Navigation</span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg></span></button>
   </div>
   <div id="terminBox" aria-live="polite"></div>
   <div id="navOverlay"></div>
@@ -386,11 +390,14 @@ function setText(t) {
 /* ---------- Navigation: Zustand, Overlay, Position ---------- */
 const navState = { t:0 }, ovState = { t:0 };   // t: 0 = oben, 1 = Bildmitte bzw. 0 = klar, 1 = stark verschwommen
 let navOpen = false, navTl = null;
+const NAV_DX = 10;   // Verschiebung des geschlossenen Menü-Symbols nach rechts in vw
 function placeNav(cfg) {
   const nb = $("navBox");
   if (!cfg || !cfg.nav) { nb.style.display = "none"; return; }
   nb.style.display = "";
-  nb.style.left = (cfg.nav.x + (50 - cfg.nav.x) * navState.t) + "%";   // beim Aufklappen wandert der Schriftzug in die Bildmitte
+  const maxX = 100 - 1.4 * CFG.navVw - 1;   // Symbol bleibt vollständig im Bild (halbe Symbolbreite + Innenabstand + 1 vw Rand)
+  const x0 = Math.min(cfg.nav.x + NAV_DX, maxX);   // geschlossen: Menü-Symbol um NAV_DX vw nach rechts verschoben
+  nb.style.left = (x0 + (50 - x0) * navState.t) + "%";   // beim Aufklappen wandert der Schriftzug in die Bildmitte
   nb.style.top = (cfg.nav.y + (50 - cfg.nav.y) * navState.t) + "%";
 }
 function applyOverlay() {
