@@ -18,12 +18,14 @@
   .stage > .abs { visibility:hidden; }   /* bis die Animation startet, ist nichts sichtbar */
   .abs { position:absolute; transform:translate(-50%, -50%); text-align:center; width:max-content; }
   #textBox { width:max-content; max-width:92%; }
-  #titel { margin:0; line-height:1.2; }
+  #titelRow { line-height:1.2; }   /* Überschrift + Aufklapp-Symbol in einer Zeile; die Schriftgröße kommt von hier (per Skript) */
+  #titel { display:inline; margin:0; font-size:inherit; line-height:inherit; }
+  #moreBtn { margin-left:.05em; padding:.35em .5em; font-size:.7em; vertical-align:middle; }   /* Symbol direkt hinter dem letzten Buchstaben, Größe relativ zur Überschrift */
   .logo { display:block; height:auto; max-width:none; flex:none; }
 
   /* ---------- "weitere Informationen" + aufklappbarer Text (nur Karussell) ---------- */
   #moreWrap { position:absolute; left:50%; top:100%; transform:translateX(-50%); width:max-content; display:flex; flex-direction:column; align-items:center;
-    font-size:calc(var(--more, 2) * 1vw); pointer-events:none; }
+    pointer-events:none; }
   .more { pointer-events:auto; display:inline-flex; align-items:center; gap:.35em; border:0; background:none; padding:.3em .6em; cursor:pointer; white-space:nowrap;
     color:#fff; font:500 1em/1.2 system-ui, sans-serif; text-shadow:0 .06em .3em rgba(0,0,0,.85); -webkit-tap-highlight-color:transparent; }
   .more .chev { display:inline-flex; transition:transform .35s ease; }
@@ -38,13 +40,14 @@
   #navBtn .icMenu { max-width:calc(1.6em * (1 - var(--nt, 0))); opacity:calc(1 - var(--nt, 0)); }
   #navBtn .navOpen { display:inline-flex; align-items:center; gap:.35em; max-width:calc(var(--nw, 12em) * var(--nt, 0)); opacity:var(--nt, 0); overflow:hidden; padding:.35em 0; margin:-.35em 0; }
   .more:focus-visible { outline:2px solid #8fa4ff; outline-offset:2px; border-radius:6px; }
-  #infoText { margin:.5em 0 0; width:calc(var(--infow, 60) * 1vw); max-width:94vw; text-align:center; color:#fff; font:400 calc(var(--info, 1.6) * 1vw)/1.45 system-ui, sans-serif;
+  #infoText { margin:.8em 0 0; width:calc(var(--infow, 60) * 1vw); max-width:94vw; text-align:center; color:#fff; font:400 calc(var(--info, 1.6) * 1vw)/1.45 system-ui, sans-serif;
     text-shadow:0 .06em .35em rgba(0,0,0,.9); pointer-events:none; white-space:normal; }
   #infoText p { margin:0 0 .7em; }
   #infoText p:last-child { margin-bottom:0; }
   #infoText strong { font-weight:600; }
   #infoText .src { font-size:.85em; opacity:.8; }
-  #infoText a { color:#fff; text-decoration:none; border-bottom:1px solid rgba(255,255,255,.85); pointer-events:auto; cursor:pointer; }   /* Links (Telefon, E-Mail) sind nur anklickbar, solange der Text aufgeklappt ist (zugeklappt: inert) */
+  #infoText a { color:#fff; text-decoration:none; pointer-events:auto; cursor:pointer; }   /* Links (Telefon, E-Mail) sind nur anklickbar, solange der Text aufgeklappt ist (zugeklappt: inert) */
+  #infoText a .ic { text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:.15em; }   /* Unterstreichung liegt an den einzelnen Buchstaben und blendet daher mit dem Text ein und aus */
   #infoText a:focus-visible { outline:2px solid #8fa4ff; outline-offset:2px; border-radius:3px; }
 
   /* ---------- Navigation (oben mittig, klappt zur Bildmitte auf) ---------- */
@@ -175,9 +178,8 @@
     <a class="ibtn" href="#" data-k="impressum" aria-label="Impressum und Datenschutz"><img src="impressum-datenschutz.svg" alt=""><span>Impressum &amp; Datenschutz</span></a>
   </div></div>
   <div id="creditBox" class="abs"><span id="creditB"></span></div>
-  <div id="textBox" class="abs"><h1 id="titel"></h1>
+  <div id="textBox" class="abs"><div id="titelRow"><h1 id="titel"></h1><button class="more" id="moreBtn" type="button" aria-expanded="false" aria-controls="infoText" aria-label="Weitere Informationen"><span class="chev"><svg id="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg></span></button></div>
     <div id="moreWrap">
-      <button class="more" id="moreBtn" type="button" aria-expanded="false" aria-controls="infoText"><span id="moreText"></span><span class="chev"><svg id="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg></span></button>
       <div id="infoText" aria-hidden="true" inert></div>
     </div>
   </div>
@@ -209,7 +211,7 @@ gsap.registerPlugin(SplitText);
 const ANCHORS = {
   land: [   // aufsteigend nach Seitenverhältnis
     { ar:1080/678, v:{   // iPad quer, 1080 x 678 px
-      fontVw:4.75, moreVw:2.00, infoVw:1.70, infoW:62, navVw:2.00, termW:74, navX:50, navY:4, navR:30, logoVw:18.52, logo2Vw:11.90, introLogo2Vw:32.41, wormVw:9.90,
+      fontVw:4.75, infoVw:1.70, infoW:62, navVw:2.00, termW:74, navX:50, navY:4, navR:30, logoVw:18.52, logo2Vw:11.90, introLogo2Vw:32.41, wormVw:9.90,
       back:2.78, stop:3.70, next:2.78, gap:0.93, smallVw:1.11,
       creditGap:-0.12, impressumDx:1.65,
       moveOut:-2.95, blurIn:2.21, blurOut:1.77, blurBgIn:2.21, blurBgOut:2.95,
@@ -217,7 +219,7 @@ const ANCHORS = {
       loop: { text:{x:50, y:10}, logo:{x:11.5, y:93.8}, logo2:{x:91.7, y:92.7}, syms:{x:50, y:94} }
     }},
     { ar:1536/695, v:{   // breites Querformat, 1536 x 695 px
-      fontVw:3.91, moreVw:1.70, infoVw:1.35, infoW:52, navVw:1.70, termW:74, navX:50, navY:4, navR:30, logoVw:13.02, logo2Vw:9.77, introLogo2Vw:22.79, wormVw:7.00,
+      fontVw:3.91, infoVw:1.35, infoW:52, navVw:1.70, termW:74, navX:50, navY:4, navR:30, logoVw:13.02, logo2Vw:9.77, introLogo2Vw:22.79, wormVw:7.00,
       back:1.95, stop:2.60, next:1.95, gap:0.65, smallVw:0.78,
       creditGap:-0.14, impressumDx:0.95,
       moveOut:-2.88, blurIn:2.16, blurOut:1.73, blurBgIn:2.16, blurBgOut:2.88,
@@ -227,7 +229,7 @@ const ANCHORS = {
   ],
   port: [
     { ar:394/734, v:{    // schmales Hochformat, 394 x 734 px
-      fontVw:8.10, moreVw:4.20, infoVw:3.80, infoW:88, navVw:4.45, termW:90, navX:80, navY:5.2, navR:30, logoVw:40.00, logo2Vw:25.00, introLogo2Vw:40.00, wormVw:20.00,
+      fontVw:8.10, infoVw:3.80, infoW:88, navVw:4.45, termW:90, navX:80, navY:5.2, navR:30, logoVw:40.00, logo2Vw:25.00, introLogo2Vw:40.00, wormVw:20.00,
       back:7.00, stop:9.00, next:7.00, gap:2.00, smallVw:2.58,
       creditGap:-0.18, impressumDx:-5.40,
       iconSz:7.57, iconIn:1.0, iconEdge:3.0, iconY:95, creditY:98.6,   // alle 9 Symbole in einer Zeile: Symbolbreite, Abstand innerhalb einer Gruppe, Randabstand links/rechts (vw, der Abstand zwischen den Gruppen ergibt sich daraus); Zeile y in %; Bildnachweis y in %
@@ -236,7 +238,7 @@ const ANCHORS = {
       loop: { text:{x:50, y:13.9}, logo:{x:23.2, y:5}, logo2:{x:15.5, y:5}, syms:{x:19.5, y:88.8} }
     }},
     { ar:810/948, v:{    // iPad hoch, 810 x 948 px
-      fontVw:7.00, moreVw:3.00, infoVw:2.40, infoW:84, navVw:3.20, termW:60, navX:88.6, navY:3.5, navR:30, logoVw:25.00, logo2Vw:20.00, introLogo2Vw:40.00, wormVw:14.00,
+      fontVw:7.00, infoVw:2.40, infoW:84, navVw:3.20, termW:60, navX:88.6, navY:3.5, navR:30, logoVw:25.00, logo2Vw:20.00, introLogo2Vw:40.00, wormVw:14.00,
       back:3.70, stop:4.94, next:3.70, gap:1.23, smallVw:1.48,
       creditGap:0, impressumDx:-5.70,
       iconSz:5.46, iconIn:1.2, iconEdge:2.5, iconY:95, creditY:98.6,
@@ -292,8 +294,7 @@ const CFG = {
   fontVw: 0,          // Textgröße in vw (kommt aus dem Profil)
   smallVw: 0,         // Schrift von Bildnachweis und Impressum in vw (kommt aus dem Profil)
   wormVw: 0,          // Breite der Wurmlöcher im Navigations-Ring in vw (das Schild folgt automatisch)
-  moreVw: 0, infoVw: 0, infoW: 0,   // Schrift "weitere Informationen", Schrift und Breite des Infotextes (aus dem Profil)
-  moreText: "weitere Informationen",
+  infoVw: 0, infoW: 0,   // Schrift und Breite des Infotextes (aus dem Profil)
   navVw: 0, navR: 0,   // Größe des Menü-Symbols (menu-icon.svg, 1,6 x dieser Wert) in vw, Radius des Wurmloch-Rings in vmin (aus dem Profil)
   color: "#ffffff", weight: 500, font: "system-ui, sans-serif",
   dim: 0.3,            // Abdunkeln des Hintergrunds (0 bis 0.9)
@@ -324,7 +325,6 @@ const CFG = {
     bg:    { in:{ at:0, blur:"bgIn", scale:1.4, duration:2.5, ease:"power2.out" }, out:BG_OUT },
     textPos:{ x:50, y:10 },
     textIn:{ at:0.5, blur:"in", scale:1.4, duration:1, ease:"power2.out", each:0.1, from:"start" }, textOut:TXT_OUT,
-    moreIn:{ at:1.2, blur:"in", scale:1.4, duration:1, ease:"power2.out", each:0.04, from:"start" },   // zweite Zeile: gleicher Effekt, etwas schnellerer Takt
     nav:   { x:50, y:0, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) },   // y kommt aus dem Profil
     logo:  { x:8,  y:93, width:0, plate:false, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.1) },
     logo2: { x:94, y:92, width:0, plate:false, in:{ at:0.5, blur:"in", scale:1.4, duration:1.25, ease:"power2.out" }, out:LOGO_OUT(0.15) },
@@ -381,7 +381,7 @@ CFG.rechtliches = RECHT_CFG;
 /* Überträgt das passende Profil (Quer- oder Hochformat) in CFG und REL */
 function applyProfile() {
   const P = profileValues();
-  CFG.termW = P.termW; CFG.navVw = P.navVw; CFG.navR = P.navR; CFG.loop.nav.x = P.navX; CFG.loop.nav.y = P.navY; CFG.moreVw = P.moreVw; CFG.infoVw = P.infoVw; CFG.infoW = P.infoW; CFG.fontVw = P.fontVw; CFG.smallVw = P.smallVw; CFG.wormVw = P.wormVw;
+  CFG.termW = P.termW; CFG.navVw = P.navVw; CFG.navR = P.navR; CFG.loop.nav.x = P.navX; CFG.loop.nav.y = P.navY; CFG.infoVw = P.infoVw; CFG.infoW = P.infoW; CFG.fontVw = P.fontVw; CFG.smallVw = P.smallVw; CFG.wormVw = P.wormVw;
   REL.creditGap = P.creditGap; REL.moveOut = P.moveOut;
   REL.blur.in = P.blurIn; REL.blur.out = P.blurOut; REL.blur.bgIn = P.blurBgIn; REL.blur.bgOut = P.blurBgOut;
   const I = CFG.intro, L = CFG.loop;
@@ -535,7 +535,7 @@ function placeTermin(cfg) {
   const box = $("terminBox");
   if (!cfg.termin || !box.firstChild) { box.style.display = "none"; return; }
   const gap = innerHeight * 0.018;
-  const top = titel.getBoundingClientRect().bottom + gap;
+  const top = $("titelRow").getBoundingClientRect().bottom + gap;
   let bottom = innerHeight;
   [symGroup, $("iconBox"), $("creditBox"), logo, logo2].forEach(e => { const r = e.getBoundingClientRect(); if (r.width && r.top > top) bottom = Math.min(bottom, r.top); });
   const avail = Math.max(80, bottom - gap - top);
@@ -547,21 +547,18 @@ function placeTermin(cfg) {
 }
 
 /* Zweite Zeile "weitere Informationen" mit Symbol und der aufklappbare Infotext */
-let splitMore, splitInfo, infoTween = null;
+let splitInfo, infoTween = null;
 function setMore(slide) {
   if (infoTween) { infoTween.kill(); infoTween = null; }
-  if (splitMore) { splitMore.revert(); splitMore = null; }
   if (splitInfo) { splitInfo.revert(); splitInfo = null; }
   const btn = $("moreBtn"), wrap = $("moreWrap");
   btn.setAttribute("aria-expanded", "false"); $("infoText").setAttribute("aria-hidden", "true"); $("infoText").inert = true;
-  if (!slide.info && !slide.infoHtml) { wrap.style.display = "none"; return { more:[], info:[] }; }
-  wrap.style.display = "";
-  $("moreText").textContent = CFG.moreText;
+  if (!slide.info && !slide.infoHtml) { wrap.style.display = "none"; btn.style.display = "none"; return { more:[], info:[] }; }
+  wrap.style.display = ""; btn.style.display = "";
   if (slide.infoHtml) $("infoText").innerHTML = slide.infoHtml; else $("infoText").textContent = slide.info;
-  splitMore = new SplitText($("moreText"), { type:"words,chars" });
-  splitInfo = new SplitText($("infoText"), { type:"words,chars" });
+  splitInfo = new SplitText($("infoText"), { type:"words,chars", charsClass:"ic" });
   gsap.set(splitInfo.chars, { opacity:0 });
-  return { more:[...splitMore.chars, $("chev")], info:splitInfo.chars };
+  return { more:[$("chev")], info:splitInfo.chars };
 }
 
 function placeLogo(img, box, c) {
@@ -609,9 +606,9 @@ function placeIcons(cfg, port) {
 /* Wendet alle Größen und Positionen an (auch live durch die Regler) */
 function layout(cfg) {
   const root = document.documentElement.style;
-  titel.style.fontSize = CFG.fontVw * ((profileName() === "port" && cfg.fontScalePort) || 1) + "vw";
+  $("titelRow").style.fontSize = CFG.fontVw * ((profileName() === "port" && cfg.fontScalePort) || 1) + "vw";
   root.setProperty("--small", CFG.smallVw + "vw");
-  root.setProperty("--more", CFG.moreVw); root.setProperty("--info", CFG.infoVw); root.setProperty("--infow", CFG.infoW);
+  root.setProperty("--info", CFG.infoVw); root.setProperty("--infow", CFG.infoW);
   root.setProperty("--cgap", REL.creditGap);
   $("textBox").style.left = cfg.textPos.x + "%"; $("textBox").style.top = cfg.textPos.y + "%";
   const PORT = profileName() === "port";
@@ -629,7 +626,6 @@ function buildTimeline(cfg, chars) {
   const tl = gsap.timeline();
   tl.from(bg, vars(cfg.bg.in), cfg.bg.in.at);
   tl.from(chars, vars(cfg.textIn), cfg.textIn.at);
-  if (cur.more.length) tl.from(cur.more, vars(cfg.moreIn), cfg.moreIn.at);
   if (cur.termin) tl.from(cur.termin.cards, vars(cfg.cardsIn), cfg.cardsIn.at);
   if (cfg.nav)   tl.from($("navBtn"), vars(cfg.nav.in), cfg.nav.in.at);
   if (cfg.logo)  tl.from(logo,  vars(cfg.logo.in),  cfg.logo.in.at);
@@ -647,7 +643,6 @@ function buildTimeline(cfg, chars) {
 /* Ausblenden des aktuellen Bildschirms (Label "out" muss in tl existieren) */
 function addOut(tl, cfg, chars) {
   tl.to(chars, vars(cfg.textOut), off(cfg.textOut.offset));
-  if (cur.more.length) tl.to(cur.more, vars(cfg.textOut), off(cfg.textOut.offset));
   if (cur.termin) tl.to(cur.termin.cards, vars(cfg.terminOut), off(cfg.terminOut.offset));
   if (cur.info.length) tl.to(cur.info, vars(INFO_OUT), off(INFO_OUT.offset));   // falls der Infotext gerade aufgeklappt ist
   if (cfg.logo)  tl.to(logo,  vars(cfg.logo.out),  off(cfg.logo.out.offset));
@@ -666,8 +661,9 @@ function playRun() {
   const slide = intro ? cfg : cfg.slides[(run - 1) % cfg.slides.length];
   if (tl) tl.kill();
   gsap.set([bg, logo, logo2, symGroup, iconRow, creditB, impressum, $("chev"), $("navBtn")], { clearProps:"opacity,filter,transform" });
-  const chars = setText(slide.text);
+  const titleChars = setText(slide.text);
   const extra = setMore(intro ? {} : slide);
+  const chars = [...titleChars, ...extra.more];   // das Aufklapp-Symbol erscheint als letztes "Zeichen" der Überschrift und blendet mit ihr aus
   const termin = setTermine(intro ? {} : slide);
   bg.style.backgroundImage = `url("${slide.bgSrc}")`;
   $("credit").textContent = $("creditB").textContent = slide.credit ? `© ${slide.credit.name} (${slide.credit.klasse})` : "";
