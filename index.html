@@ -6,10 +6,16 @@
 <title>Prototyp: Termine</title>
 <!--
   Lege diese Datei in einen Ordner zusammen mit:
-  Januar.png bis Dezember.png, Juni als Juni.jpg (Intro und Termine), 002.jpg, 003.jpg, 004.jpg (Karussell), logo.png, logo2.png,
+  Januar.png bis Dezember.png, Juni als Juni.png (Intro und Termine), 002.jpg, 003.jpg, 004.jpg (Karussell), logo.png, logo2.png,
   wurmloch-news.png, schild-news.png, schild-schule.png, schild-ganztag.png, schild-termine.png, schild-kontakt.png, schild-support.png (Wurmlöcher der Navigation),
   Zurueck.png, Stopp.png, play.png, Vor.png (Symbole), menu-icon.svg (Menü-Symbol der Navigation)
 -->
+<script>
+/* Intro-Bild: immer die webp-Version des aktuellen Monats (Dateien klein geschrieben). Zusammen mit logo2.png wird es sofort mit hoher Priorität geladen, alles andere erst danach (siehe unten "Bilder vorladen"). */
+const INTRO_BILDER = ["januar.webp","februar.webp","märz.webp","april.webp","mai.webp","juni.webp","juli.webp","august.webp","september.webp","oktober.webp","november.webp","dezember.webp"];
+const INTRO_BILD = INTRO_BILDER[new Date().getMonth()];
+[INTRO_BILD, "logo2.png"].forEach(f => { const l = document.createElement("link"); l.rel = "preload"; l.as = "image"; l.href = f; l.fetchPriority = "high"; document.head.appendChild(l); });
+</script>
 <style>
   html, body { margin:0; height:100%; background:#111; overflow:hidden; }
   .stage { position:fixed; inset:0; overflow:hidden; }
@@ -288,7 +294,7 @@ const NAV_SIGNS = [["news","News",1], ["schule","Schule",1.21], ["ganztag","Ganz
 const NAV_IN = { blur:"in", scale:1.4, y:0, duration:1.25, ease:"power2.out", each:0.1, from:"start" };
 
 /* Hintergrundbild je Kalendermonat (0 = Januar): Januar.png bis Dezember.png. Das Intro nutzt das Bild des aktuellen Monats. */
-const MONATS_BILDER = ["Januar.png","Februar.png","März.png","April.png","Mai.png","Juni.jpg","Juli.png","August.png","September.png","oktober.webp","November.png","Dezember.png"];
+const MONATS_BILDER = ["Januar.png","Februar.png","März.png","April.png","Mai.png","Juni.png","Juli.png","August.png","September.png","Oktober.png","November.png","Dezember.png"];
 
 const CFG = {
   fontVw: 0,          // Textgröße in vw (kommt aus dem Profil)
@@ -301,7 +307,7 @@ const CFG = {
 
   /* ---------- 1. Durchlauf (einmalig) ---------- */
   intro: {
-    bgSrc: MONATS_BILDER[new Date().getMonth()], text: "Willkommen an der",
+    bgSrc: INTRO_BILD, text: "Willkommen an der",
     hold: 1, pauseAfter: 0,
     bg:    { in:{ at:0, blur:"bgIn", scale:1.4, duration:2, ease:"power1.in" }, out:BG_OUT },
     textPos:{ x:50, y:30 },
@@ -936,7 +942,7 @@ impressum.addEventListener("click", e => {
 });
 
 /* Bilder vorladen in drei Stufen, damit die Seite sofort startet:
-   Stufe 1: nur die beiden Intro-Bilder (Monatsbild + logo2.png) mit hoher Priorität → das Intro startet, sobald sie da sind.
+   Stufe 1: nur die beiden Intro-Bilder (Monats-webp + logo2.png) mit hoher Priorität → das Intro startet, sobald sie da sind.
    Stufe 2: alles, was die Schleife braucht, lädt WÄHREND der Intro-Animation. Ist es beim Ende des Intros noch nicht fertig, wartet der Ablauf kurz darauf.
    Stufe 3: die übrigen Monatsbilder (nur für die Termine-Seiten) laden danach mit niedriger Priorität im Hintergrund. */
 const INTRO_FILES = [CFG.intro.bgSrc, "logo2.png"];
