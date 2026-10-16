@@ -854,6 +854,8 @@ function diveFromNav(i, w, portal) {
   if (infoTween) infoTween.kill();
   if (nextCall) nextCall.kill();
   active.kill();      // ... und erst danach endgültig beenden
+  navTl.eventCallback("onReverseComplete", null);
+  navTl.pause();      // Einblenden der Navigation abbrechen: sonst blenden noch nicht fertige Wurmlöcher weiter ein und überschreiben das Ausblenden
   const ring = $("navRing");
   ring.classList.remove("open"); ring.style.zIndex = 101;   // zoomendes Wurmloch über allem
   $("navOverlay").classList.remove("on");
