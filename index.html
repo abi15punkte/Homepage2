@@ -6,7 +6,7 @@
 <title>Prototyp: Termine</title>
 <!--
   Lege diese Datei in einen Ordner zusammen mit:
-  001.jpg (Intro), 002.jpg, 003.jpg, 004.jpg (Karussell), logo.png, logo2.png,
+  Januar.png bis Dezember.png (Intro und Termine), 002.jpg, 003.jpg, 004.jpg (Karussell), logo.png, logo2.png,
   wurmloch-news.png, schild-news.png, schild-schule.png, schild-ganztag.png, schild-termine.png, schild-kontakt.png, schild-support.png (Wurmlöcher der Navigation),
   Zurueck.png, Stopp.png, play.png, Vor.png (Symbole)
 -->
@@ -174,7 +174,7 @@ gsap.registerPlugin(SplitText);
 const ANCHORS = {
   land: [   // aufsteigend nach Seitenverhältnis
     { ar:1080/678, v:{   // iPad quer, 1080 x 678 px
-      fontVw:4.75, moreVw:2.00, infoVw:1.70, infoW:62, navVw:2.00, navX:50, navY:4, navR:30, logoVw:18.52, logo2Vw:11.90, introLogo2Vw:32.41, wormVw:9.90,
+      fontVw:4.75, moreVw:2.00, infoVw:1.70, infoW:62, navVw:2.00, termW:74, navX:50, navY:4, navR:30, logoVw:18.52, logo2Vw:11.90, introLogo2Vw:32.41, wormVw:9.90,
       back:2.78, stop:3.70, next:2.78, gap:0.93, smallVw:1.11,
       creditGap:-0.12, impressumDx:1.65,
       moveOut:-2.95, blurIn:2.21, blurOut:1.77, blurBgIn:2.21, blurBgOut:2.95,
@@ -182,7 +182,7 @@ const ANCHORS = {
       loop: { text:{x:50, y:10}, logo:{x:11.5, y:93.8}, logo2:{x:91.7, y:92.7}, syms:{x:50, y:94} }
     }},
     { ar:1536/695, v:{   // breites Querformat, 1536 x 695 px
-      fontVw:3.91, moreVw:1.70, infoVw:1.35, infoW:52, navVw:1.70, navX:50, navY:4, navR:30, logoVw:13.02, logo2Vw:9.77, introLogo2Vw:22.79, wormVw:7.00,
+      fontVw:3.91, moreVw:1.70, infoVw:1.35, infoW:52, navVw:1.70, termW:74, navX:50, navY:4, navR:30, logoVw:13.02, logo2Vw:9.77, introLogo2Vw:22.79, wormVw:7.00,
       back:1.95, stop:2.60, next:1.95, gap:0.65, smallVw:0.78,
       creditGap:-0.14, impressumDx:0.95,
       moveOut:-2.88, blurIn:2.16, blurOut:1.73, blurBgIn:2.16, blurBgOut:2.88,
@@ -192,7 +192,7 @@ const ANCHORS = {
   ],
   port: [
     { ar:394/734, v:{    // schmales Hochformat, 394 x 734 px
-      fontVw:8.10, moreVw:4.20, infoVw:3.80, infoW:88, navVw:4.45, navX:80, navY:5.2, navR:30, logoVw:40.00, logo2Vw:25.00, introLogo2Vw:40.00, wormVw:20.00,
+      fontVw:8.10, moreVw:4.20, infoVw:3.80, infoW:88, navVw:4.45, termW:90, navX:80, navY:5.2, navR:30, logoVw:40.00, logo2Vw:25.00, introLogo2Vw:40.00, wormVw:20.00,
       back:7.00, stop:9.00, next:7.00, gap:2.00, smallVw:2.58,
       creditGap:-0.18, impressumDx:-5.40,
       moveOut:-2.72, blurIn:3.81, blurOut:3.05, blurBgIn:3.81, blurBgOut:5.08,
@@ -200,7 +200,7 @@ const ANCHORS = {
       loop: { text:{x:50, y:18.9}, logo:{x:23.2, y:5}, logo2:{x:86.5, y:94.8}, syms:{x:23, y:95.1} }
     }},
     { ar:810/948, v:{    // iPad hoch, 810 x 948 px
-      fontVw:7.00, moreVw:3.00, infoVw:2.40, infoW:84, navVw:3.20, navX:88.6, navY:3.5, navR:30, logoVw:25.00, logo2Vw:20.00, introLogo2Vw:40.00, wormVw:14.00,
+      fontVw:7.00, moreVw:3.00, infoVw:2.40, infoW:84, navVw:3.20, termW:60, navX:88.6, navY:3.5, navR:30, logoVw:25.00, logo2Vw:20.00, introLogo2Vw:40.00, wormVw:14.00,
       back:3.70, stop:4.94, next:3.70, gap:1.23, smallVw:1.48,
       creditGap:0, impressumDx:-5.70,
       moveOut:-2.11, blurIn:1.85, blurOut:1.48, blurBgIn:1.85, blurBgOut:2.47,
@@ -241,6 +241,9 @@ const NAV_COUNT = 6, NAV_BLUR_VMIN = 4;
 const NAV_SIGNS = [["news","News",1], ["schule","Schule",1.21], ["ganztag","Ganztag",1.21], ["termine","Termine",1.21], ["kontakt","Kontakt",1.21], ["support","Support",1.21]];
 const NAV_IN = { blur:"in", scale:1.4, y:0, duration:1.25, ease:"power2.out", each:0.1, from:"start" };
 
+/* Hintergrundbild je Kalendermonat (0 = Januar): Januar.png bis Dezember.png. Das Intro nutzt das Bild des aktuellen Monats. */
+const MONATS_BILDER = ["Januar.png","Februar.png","März.png","April.png","Mai.png","Juni.png","Juli.png","August.png","September.png","Oktober.png","November.png","Dezember.png"];
+
 const CFG = {
   fontVw: 0,          // Textgröße in vw (kommt aus dem Profil)
   smallVw: 0,         // Schrift von Bildnachweis und Impressum in vw (kommt aus dem Profil)
@@ -253,7 +256,7 @@ const CFG = {
 
   /* ---------- 1. Durchlauf (einmalig) ---------- */
   intro: {
-    bgSrc: "001.jpg", text: "Willkommen an der",
+    bgSrc: MONATS_BILDER[new Date().getMonth()], text: "Willkommen an der",
     hold: 1, pauseAfter: 0,
     bg:    { in:{ at:0, blur:"bgIn", scale:1.4, duration:2, ease:"power1.in" }, out:BG_OUT },
     textPos:{ x:50, y:30 },
@@ -302,7 +305,7 @@ CFG.termine = TERMIN_CFG;
 /* Überträgt das passende Profil (Quer- oder Hochformat) in CFG und REL */
 function applyProfile() {
   const P = profileValues();
-  CFG.navVw = P.navVw; CFG.navR = P.navR; CFG.loop.nav.x = P.navX; CFG.loop.nav.y = P.navY; CFG.moreVw = P.moreVw; CFG.infoVw = P.infoVw; CFG.infoW = P.infoW; CFG.fontVw = P.fontVw; CFG.smallVw = P.smallVw; CFG.wormVw = P.wormVw;
+  CFG.termW = P.termW; CFG.navVw = P.navVw; CFG.navR = P.navR; CFG.loop.nav.x = P.navX; CFG.loop.nav.y = P.navY; CFG.moreVw = P.moreVw; CFG.infoVw = P.infoVw; CFG.infoW = P.infoW; CFG.fontVw = P.fontVw; CFG.smallVw = P.smallVw; CFG.wormVw = P.wormVw;
   REL.creditGap = P.creditGap; REL.moveOut = P.moveOut;
   REL.blur.in = P.blurIn; REL.blur.out = P.blurOut; REL.blur.bgIn = P.blurBgIn; REL.blur.bgOut = P.blurBgOut;
   const I = CFG.intro, L = CFG.loop;
@@ -372,8 +375,6 @@ function placeRing() {
    ============================================================ */
 const MONATE = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 const WTAG   = ["So","Mo","Di","Mi","Do","Fr","Sa"];
-/* Hintergrundbild je Kalendermonat (0 = Januar). Vorerst überall 001.jpg, später z. B. "monat-12.jpg" mit Schnee in den Bäumen. */
-const MONATS_BILDER = ["001.jpg","001.jpg","001.jpg","001.jpg","001.jpg","001.jpg","001.jpg","001.jpg","001.jpg","001.jpg","001.jpg","001.jpg"];
 /* Beispieltermine (ausgedacht): d = Tag, bis = letzter Tag bei mehrtägigen Terminen, t = Titel, z = Zeit, o = Ort */
 const TERMINE = {
   0:[ {d:1,bis:5,t:"Weihnachtsferien"}, {d:12,t:"Elternabend Klasse 9",z:"19 Uhr",o:"Aula"}, {d:22,t:"Tag der offenen Tür",z:"10–14 Uhr"}, {d:30,t:"Zeugnisausgabe",z:"Unterrichtsende 11:45 Uhr"} ],
@@ -443,13 +444,13 @@ function setTermine(slide) {
 function placeTermin(cfg) {
   const box = $("terminBox");
   if (!cfg.termin || !box.firstChild) { box.style.display = "none"; return; }
-  const port = innerWidth < innerHeight, gap = innerHeight * 0.018;
+  const gap = innerHeight * 0.018;
   const top = titel.getBoundingClientRect().bottom + gap;
   let bottom = innerHeight;
   [symGroup, logo, logo2].forEach(e => { const r = e.getBoundingClientRect(); if (r.width && r.top > top) bottom = Math.min(bottom, r.top); });
   const avail = Math.max(80, bottom - gap - top);
   box.style.display = "flex";
-  box.style.width = port ? "90vw" : "74vw";
+  box.style.width = CFG.termW + "vw";   // Breite der Terminliste, stetig überblendet (Hochformat: 90 vw schmal, 60 vw iPad)
   box.style.top = top + "px";
   box.style.maxHeight = avail + "px";
   box.classList.toggle("scroll", box.scrollHeight > avail + 1);
