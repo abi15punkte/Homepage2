@@ -639,7 +639,11 @@ function playRun() {
   active = tl;
   /* Erst jetzt sichtbar schalten: die Startwerte (Deckkraft 0) sind bereits gesetzt */
   document.querySelectorAll(".stage > .abs").forEach(e => e.style.visibility = "visible");
-  tl.eventCallback("onComplete", () => { if (stopped) return; run++; nextCall = gsap.delayedCall(cfg.pauseAfter, playRun); });
+  tl.eventCallback("onComplete", () => {
+    if (stopped) return;
+    const go = () => { run++; nextCall = gsap.delayedCall(cfg.pauseAfter, playRun); };
+    if (run === 0 && !loopReady) afterLoopReady = go; else go();   // Intro zu Ende, Stufe 2 noch nicht geladen: kurz warten
+  });
 }
 
 /* ---------- Klick auf das Wurmloch ----------
@@ -858,21 +862,36 @@ impressum.addEventListener("click", e => {
   if (IMPRESSUM_URL) location.href = IMPRESSUM_URL;
 });
 
-/* Bilder vorladen und fehlende Dateien anzeigen */
-const files = ["Zurueck.png", "Stopp.png", "play.png", "Vor.png", "logo.png", "logo2.png", "telefon.svg", "email.svg", "adresse.svg", "iserv.svg", "foerderverein.svg", "impressum-datenschutz.svg", "menu-icon.svg", "wurmloch-news.png", ...NAV_SIGNS.map(x => "schild-" + x[0] + ".png"), CFG.intro.bgSrc, ...CFG.loop.slides.map(x => x.bgSrc), ...new Set(MONATS_BILDER)];
+/* Bilder vorladen in drei Stufen, damit die Seite sofort startet:
+   Stufe 1: nur die beiden Intro-Bilder (Monatsbild + logo2.png) mit hoher Priorität → das Intro startet, sobald sie da sind.
+   Stufe 2: alles, was die Schleife braucht, lädt WÄHREND der Intro-Animation. Ist es beim Ende des Intros noch nicht fertig, wartet der Ablauf kurz darauf.
+   Stufe 3: die übrigen Monatsbilder (nur für die Termine-Seiten) laden danach mit niedriger Priorität im Hintergrund. */
+const INTRO_FILES = [CFG.intro.bgSrc, "logo2.png"];
+const LOOP_FILES = ["Zurueck.png", "Stopp.png", "play.png", "Vor.png", "logo.png", "telefon.svg", "email.svg", "adresse.svg", "iserv.svg", "foerderverein.svg", "impressum-datenschutz.svg", "menu-icon.svg", "wurmloch-news.png",
+  ...NAV_SIGNS.map(x => "schild-" + x[0] + ".png"), ...CFG.loop.slides.map(x => x.bgSrc)].filter(f => !INTRO_FILES.includes(f));
+const MONTH_FILES = [...new Set(MONATS_BILDER)].filter(f => !INTRO_FILES.includes(f) && !LOOP_FILES.includes(f));
 const missing = [];
-let pending = files.length;
-files.forEach(f => {
-  const i = new Image();
-  i.onerror = () => { missing.push(f); done(); };
-  i.onload = done;
-  i.src = f;
-});
-function done() {
-  if (--pending) return;
-  if (missing.length) { const n = $("fehlt"); n.style.display = "block"; n.textContent = "Datei nicht gefunden: " + missing.join(", "); }
-  playRun();
+let loopReady = false, afterLoopReady = null;   // loopReady: Stufe 2 geladen; afterLoopReady: wartender Start der Schleife
+function loadFiles(list, prio, cb) {
+  let pending = list.length;
+  if (!pending) { cb(); return; }
+  list.forEach(f => {
+    const i = new Image();
+    if (prio) i.fetchPriority = prio;
+    const fin = () => { if (--pending === 0) cb(); };
+    i.onerror = () => { missing.push(f); const n = $("fehlt"); n.style.display = "block"; n.textContent = "Datei nicht gefunden: " + missing.join(", "); fin(); };
+    i.onload = fin;
+    i.src = f;
+  });
 }
+loadFiles(INTRO_FILES, "high", () => {
+  playRun();   // Intro startet sofort
+  loadFiles(LOOP_FILES, "auto", () => {
+    loopReady = true;
+    if (afterLoopReady) { const go = afterLoopReady; afterLoopReady = null; go(); }
+    loadFiles(MONTH_FILES, "low", () => {});
+  });
+});
 </script>
 <script>
 /* Wurmloch: Drehung, Glühwürmchen und Klick-Reise (aus wurmloch-news-final.html) */
